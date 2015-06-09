@@ -183,15 +183,15 @@ TOML = {
 					else
 						err("Invalid exponent")
 					end
-				elseif char(1):match(ws) or char(1) == "#" or char(1) == "\n" or char() == "," or char() == "]" then
+				elseif char():match(ws) or char() == "#" or char() == "\n" or char() == "," or char() == "]" then
 					break
 				elseif char() == "T" or char() == "Z" then
 					date = true
 					while(bounds()) do
-						num = num .. char()
-						if char(1) == "#" or char(1) == "\n" or char(1):match(ws) then
+						if char() == "," or char() == "]" or char() == "#" or char() == "\n" or char():match(ws) then
 							break
 						end
+						num = num .. char()
 						step()
 					end
 				else
@@ -219,7 +219,7 @@ TOML = {
 			skipWhitespace()
 
 			local arrayType
-			local array
+			local array = {}
 
 			while(bounds()) do
 				if char() == "]" then
@@ -228,6 +228,10 @@ TOML = {
 					-- skip
 					step()
 					skipWhitespace()
+				elseif char() == "#" then
+					while(bounds() and char() ~= "\n") do
+						step()
+					end
 				else
 					local v = getValue()
 					if not v then break end
@@ -322,7 +326,11 @@ TOML = {
 				buffer = ""
 
 				skipWhitespace()
-
+				if char() == "#" then
+					while(bounds() and char() ~= "\n") do
+						step()
+					end
+				end
 				if char() ~= "\n" and cursor < toml:len() then
 					err("Invalid primitive")
 				end
