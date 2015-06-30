@@ -1,4 +1,4 @@
-TOML = {
+return {
 	strict = true,
 
 	version = 0.31,
