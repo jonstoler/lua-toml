@@ -1,9 +1,12 @@
-return {
-	strict = true,
-
+TOML = {
 	version = 0.31,
 
-	parse = function(toml)
+	strict = true,
+
+	parse = function(toml, options)
+		options = options or {}
+		local strict = (options.strict ~= nil and options.strict or TOML.strict)
+
 		local ws = "[\009\032]"
 		
 		local buffer = ""
@@ -47,7 +50,7 @@ return {
 
 		local function err(message, strictOnly)
 			strictOnly = (strictOnly == nil) or true
-			if not strictOnly or (strictOnly and TOML.strict) then
+			if not strictOnly or (strictOnly and strict) then
 				local line = 1
 				local c = 0
 				for l in toml:gmatch("(.-)\n") do
