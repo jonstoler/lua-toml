@@ -16,14 +16,19 @@ TOML.parse = function(toml, options)
 
 	local obj = out
 
-	local function char(n)
-		n = n or 0
-		return toml:sub(cursor + n, cursor + n)
-	end
-
 	local function step(n)
 		n = n or 1
 		cursor = cursor + n
+	end
+	
+	local function char(n)
+		n = n or 0
+		local c = toml:sub(cursor + n, cursor + n)
+		if c == "\r" then
+			step()
+			return char(n)
+		end
+		return c
 	end
 
 	local function skipWhitespace()
