@@ -307,7 +307,7 @@ TOML.parse = function(toml, options)
 			skipWhitespace()
 		end
 
-		if char() == "\n" then
+		if char() == "\n" or char() == "\r" then
 			-- skip
 		end
 
