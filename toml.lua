@@ -1,41 +1,60 @@
 local TOML = {
+	-- denotes the current supported TOML version
 	version = 0.31,
 
+	-- sets whether the parser should follow the TOML spec strictly
+	-- currently, no errors are thrown for the following rules if strictness is turned off:
+	--   tables having mixed keys
+	--   redefining a table
+	--   redefining a key within a table
 	strict = true,
 }
 
+-- converts TOML data into a lua table
 TOML.parse = function(toml, options)
 	options = options or {}
 	local strict = (options.strict ~= nil and options.strict or TOML.strict)
 
+	-- the official TOML definition of whitespace
 	local ws = "[\009\032]"
 	
+	-- stores text data
 	local buffer = ""
+
+	-- the current location within the string to parse
 	local cursor = 1
+
+	-- the output table
 	local out = {}
 
+	-- the current table to write to
 	local obj = out
 
+	-- returns the next n characters from the current position
 	local function char(n)
 		n = n or 0
 		return toml:sub(cursor + n, cursor + n)
 	end
 
+	-- moves the current position forward n (default: 1) characters
 	local function step(n)
 		n = n or 1
 		cursor = cursor + n
 	end
 
+	-- move forward until the next non-whitespace character
 	local function skipWhitespace()
 		while(char():match(ws)) do
 			step()
 		end
 	end
 
+	-- remove the (Lua) whitespace at the beginning and end of a string
 	local function trim(str)
 		return str:gsub("^%s*(.-)%s*$", "%1")
 	end
 
+	-- divide a string into a table around a delimiter
 	local function split(str, delim)
 		if str == "" then return {} end
 		local result = {}
@@ -49,8 +68,9 @@ TOML.parse = function(toml, options)
 		return result
 	end
 
+	-- produce a parsing error message
+	-- the error contains the line number of the current position
 	local function err(message, strictOnly)
-		strictOnly = (strictOnly == nil) or true
 		if not strictOnly or (strictOnly and strict) then
 			local line = 1
 			local c = 0
@@ -65,16 +85,22 @@ TOML.parse = function(toml, options)
 		end
 	end
 
+	-- prevent infinite loops by checking whether the cursor is
+	-- at the end of the document or not
 	local function bounds()
-		-- prevent infinite loops
 		return cursor <= toml:len()
 	end
 
 	local function parseString()
 		local quoteType = char() -- should be single or double quote
+
+		-- this is a multiline string if the next 2 characters match
 		local multiline = (char(1) == char(2) and char(1) == char())
 
+		-- buffer to hold the string
 		local str = ""
+
+		-- skip the quotes
 		step(multiline and 3 or 1)
 
 		while(bounds()) do
@@ -83,6 +109,7 @@ TOML.parse = function(toml, options)
 				step()
 			end
 
+			-- keep going until we encounter the quote character again
 			if char() == quoteType then
 				if multiline then
 					if char(1) == char(2) and char(1) == quoteType then
@@ -101,10 +128,11 @@ TOML.parse = function(toml, options)
 				err("Single-line string cannot contain line break")
 			end
 
+			-- if we're in a double-quoted string, watch for escape characters!
 			if quoteType == '"' and char() == "\\" then
 				if multiline and char(1) == "\n" then
 					-- skip until first non-whitespace character
-					step(1)
+					step(1) -- go past the line break
 					while(bounds()) do
 						if char() ~= " " and char() ~= "\t" and char() ~= "\n" then
 							break
@@ -112,6 +140,7 @@ TOML.parse = function(toml, options)
 						step()
 					end
 				else
+					-- all available escape characters
 					local escape = {
 						b = "\b",
 						t = "\t",
@@ -123,6 +152,7 @@ TOML.parse = function(toml, options)
 						["\\"] = "\\",
 					}
 					-- utf function from http://stackoverflow.com/a/26071044
+					-- converts \uXXX into actual unicode
 					local function utf(char)
 						local bytemarkers = {{0x7ff, 192}, {0xffff, 224}, {0x1fffff, 240}}
 						if char < 128 then return string.char(char) end
@@ -140,9 +170,11 @@ TOML.parse = function(toml, options)
 						end
 						return table.concat(charbytes)
 					end
+
 					if escape[char(1)] then
+						-- normal escape
 						str = str .. escape[char(1)]
-						step(2)
+						step(2) -- go past backslash and the character
 					elseif char(1) == "u" then
 						-- utf-16
 						step()
@@ -162,6 +194,7 @@ TOML.parse = function(toml, options)
 					end
 				end
 			else
+				-- if we're not in a double-quoted string, just append it to our buffer raw and keep going
 				str = str .. char()
 				step()
 			end
@@ -178,6 +211,8 @@ TOML.parse = function(toml, options)
 			if char():match("[%+%-%.eE0-9]") then
 				if not exp then
 					if char():lower() == "e" then
+						-- as soon as we reach e or E, start appending to exponent buffer instead of
+						-- number buffer
 						exp = ""
 					else
 						num = num .. char()
@@ -190,6 +225,7 @@ TOML.parse = function(toml, options)
 			elseif char():match(ws) or char() == "#" or char() == "\n" or char() == "," or char() == "]" then
 				break
 			elseif char() == "T" or char() == "Z" then
+				-- parse the date (as a string, since lua has no date object)
 				date = true
 				while(bounds()) do
 					if char() == "," or char() == "]" or char() == "#" or char() == "\n" or char():match(ws) then
@@ -218,8 +254,9 @@ TOML.parse = function(toml, options)
 	end
 
 	local parseArray, getValue
+	
 	function parseArray()
-		step()
+		step() -- skip [
 		skipWhitespace()
 
 		local arrayType
@@ -237,8 +274,11 @@ TOML.parse = function(toml, options)
 					step()
 				end
 			else
+				-- get the next object in the array
 				local v = getValue()
 				if not v then break end
+
+				-- set the type if it hasn't been set before
 				if arrayType == nil then
 					arrayType = v.type
 				elseif arrayType ~= v.type then
@@ -281,6 +321,7 @@ TOML.parse = function(toml, options)
 		return v
 	end
 
+	-- figure out the type and get the next value in the document
 	function getValue()
 		if char() == '"' or char() == "'" then
 			return parseString()
@@ -291,12 +332,17 @@ TOML.parse = function(toml, options)
 		else
 			return parseBoolean()
 		end
-		-- date regex:
+		-- date regex (for possible future support):
 		-- %d%d%d%d%-[0-1][0-9]%-[0-3][0-9]T[0-2][0-9]%:[0-6][0-9]%:[0-6][0-9][Z%:%+%-%.0-9]*
 	end
 
+	-- buffer for table arrays
 	local tableArrays = {}
+	
+	-- parse the document!
 	while(cursor <= toml:len()) do
+
+		-- skip comments and whitespace
 		if char() == "#" then
 			while(char() ~= "\n") do
 				step()
@@ -314,6 +360,8 @@ TOML.parse = function(toml, options)
 		if char() == "=" then
 			step()
 			skipWhitespace()
+			
+			-- trim key name
 			buffer = trim(buffer)
 
 			if buffer == "" then
@@ -322,19 +370,26 @@ TOML.parse = function(toml, options)
 
 			local v = getValue()
 			if v then
+				-- if the key already exists in the current object, throw an error
 				if obj[buffer] then
 					err("Cannot redefine key " .. buffer, true)
 				end
 				obj[buffer] = v.value
 			end
+			
+			-- clear the buffer
 			buffer = ""
 
+			-- skip whitespace and comments
 			skipWhitespace()
 			if char() == "#" then
 				while(bounds() and char() ~= "\n") do
 					step()
 				end
 			end
+
+			-- if there is anything left on this line after parsing a key and its value,
+			-- throw an error
 			if char() ~= "\n" and cursor < toml:len() then
 				err("Invalid primitive")
 			end
@@ -343,6 +398,8 @@ TOML.parse = function(toml, options)
 			buffer = ""
 			step()
 			local tableArray = false
+
+			-- if there are two brackets in a row, it's a table array!
 			if char() == "[" then
 				tableArray = true
 				step()
@@ -355,7 +412,7 @@ TOML.parse = function(toml, options)
 					if tableArray and char(1) ~= "]" then
 						err("Mismatching brackets")
 					elseif tableArray then
-						step()
+						step() -- skip second bracket
 					end
 					break
 				end
@@ -375,6 +432,8 @@ TOML.parse = function(toml, options)
 					err("Cannot redefine table", true)
 				end
 
+				-- set obj to the appropriate table so we can start filling
+				-- it with values!
 				if tableArrays[tbl] then
 					if buffer ~= tbl and #spl > 1 then
 						obj = tableArrays[tbl]
@@ -424,6 +483,7 @@ TOML.encode = function(tbl)
 				local quote = '"'
 				v = v:gsub("\\", "\\\\")
 
+				-- if the string has any line breaks, make it multiline
 				if v:match("^\n(.*)$") then
 					quote = quote:rep(3)
 					v = "\\n" .. v
