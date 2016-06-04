@@ -250,7 +250,17 @@ TOML.parse = function(toml, options)
 		exp = exp and tonumber(exp) or 1
 		num = tonumber(num)
 
-		return {value = num ^ exp, type = float and "float" or "int"}
+		if not float then
+			return {
+				-- lua will automatically convert the result
+				-- of a power operation to a float, so we have
+				-- to convert it back to an int with math.floor
+				value = math.floor(num ^ exp),
+				type = "int",
+			}
+		end
+
+		return {value = num ^ exp, type = "float"}
 	end
 
 	local parseArray, getValue
