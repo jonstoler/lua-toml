@@ -349,10 +349,6 @@ TOML.parse = function(toml, options)
 			end
 		end
 
-		if char():match(ws) then
-			skipWhitespace()
-		end
-
 		if char() == "\n" or char() == "\r" then
 			-- skip
 		end
@@ -393,7 +389,6 @@ TOML.parse = function(toml, options)
 			if char() ~= "\n" and cursor < toml:len() then
 				err("Invalid primitive")
 			end
-
 		elseif char() == "[" then
 			buffer = ""
 			step()
