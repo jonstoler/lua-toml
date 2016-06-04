@@ -115,8 +115,6 @@ TOML.parse = function(toml, options)
 					if char(1) == char(2) and char(1) == quoteType then
 						step(3)
 						break
-					else
-						err("Mismatching quotes")
 					end
 				else
 					step()
