@@ -1,17 +1,24 @@
 # toml.lua
 
+<img src="https://travis-ci.org/jonstoler/lua-toml.svg" />
+
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
 Latest supported version: 0.3.1
 
 # Usage
 
+	TOML = require "toml"
 	TOML.parse(string)
 	tomlOut = TOML.encode(table)
 
 To enable more lua-friendly features (like mixed arrays):
 
 	TOML.strict = false
+
+or:
+
+	TOML.parse(string, {strict = false})
 
 <span></span>
 
