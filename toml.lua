@@ -431,7 +431,7 @@ TOML.parse = function(toml, options)
 					err("Empty table name")
 				end
 
-				if i == #spl and obj[tbl] and not tableArray then
+				if i == #spl and obj[tbl] and not tableArray and #obj[tbl] > 0 then
 					err("Cannot redefine table", true)
 				end
 
@@ -441,10 +441,9 @@ TOML.parse = function(toml, options)
 					if buffer ~= tbl and #spl > 1 then
 						obj = tableArrays[tbl]
 					else
-						obj = tableArrays[tbl]
 						obj[tbl] = obj[tbl] or {}
 						obj = obj[tbl]
-						if tableArray then
+						if tableArray and i == #spl then
 							table.insert(obj, {})
 							obj = obj[#obj]
 						end
@@ -452,7 +451,7 @@ TOML.parse = function(toml, options)
 				else
 					obj[tbl] = obj[tbl] or {}
 					obj = obj[tbl]
-					if tableArray then
+					if tableArray and i == #spl then
 						table.insert(obj, {})
 						obj = obj[#obj]
 					end
