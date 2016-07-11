@@ -245,7 +245,7 @@ TOML.parse = function(toml, options)
 		local float = false
 		if num:match("%.") then float = true end
 
-		exp = exp and tonumber(exp) or 1
+		exp = exp and tonumber(exp) or 0
 		num = tonumber(num)
 
 		if not float then
@@ -253,12 +253,12 @@ TOML.parse = function(toml, options)
 				-- lua will automatically convert the result
 				-- of a power operation to a float, so we have
 				-- to convert it back to an int with math.floor
-				value = math.floor(num ^ exp),
+				value = math.floor(num * 10^exp),
 				type = "int",
 			}
 		end
 
-		return {value = num ^ exp, type = "float"}
+		return {value = num * 10^exp, type = "float"}
 	end
 
 	local parseArray, getValue
