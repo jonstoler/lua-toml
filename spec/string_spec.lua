@@ -71,7 +71,7 @@ tab = 'This string has a \t tab character.'
 newline = 'This string has a \n new line character.'
 formfeed = 'This string has a \f form feed character.'
 carriage = 'This string has a \r carriage return character.'
-slash = 'This string has a \/ slash character.'
+slash = 'This string has a / slash character.'
 backslash = 'This string has a \\ backslash character.']=]
 		local sol = {
 			backspace = "This string has a \\b backspace character.",
@@ -79,7 +79,7 @@ backslash = 'This string has a \\ backslash character.']=]
 			newline = "This string has a \\n new line character.",
 			formfeed = "This string has a \\f form feed character.",
 			carriage = "This string has a \\r carriage return character.",
-			slash = "This string has a \\/ slash character.",
+			slash = "This string has a / slash character.",
 			backslash = "This string has a \\\\ backslash character."
 		}
 		assert.same(sol, obj)

@@ -6,10 +6,14 @@ describe("integer parsing", function()
 	it("integer", function()
 		local obj = TOML.parse[=[
 answer = 42
-neganswer = -42]=]
+neganswer = -42
+posanswer = +42
+underscore = 1_000]=]
 		local sol = {
 			answer = 42,
 			neganswer = -42,
+			posanswer = 42,
+			underscore = 1000,
 		}
 		assert.same(sol, obj)
 	end)
