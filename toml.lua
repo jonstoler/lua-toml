@@ -146,7 +146,6 @@ TOML.parse = function(toml, options)
 						f = "\f",
 						r = "\r",
 						['"'] = '"',
-						["/"] = "/",
 						["\\"] = "\\",
 					}
 					-- utf function from http://stackoverflow.com/a/26071044
@@ -206,13 +205,13 @@ TOML.parse = function(toml, options)
 		local exp
 		local date = false
 		while(bounds()) do
-			if char():match("[%+%-%.eE0-9]") then
+			if char():match("[%+%-%.eE_0-9]") then
 				if not exp then
 					if char():lower() == "e" then
 						-- as soon as we reach e or E, start appending to exponent buffer instead of
 						-- number buffer
 						exp = ""
-					else
+					elseif char() ~= "_" then
 						num = num .. char()
 					end
 				elseif char():match("[%+%-0-9]") then
@@ -307,6 +306,12 @@ TOML.parse = function(toml, options)
 		return {value = array, type = "array"}
 	end
 
+	local function parseInlineTable()
+		while(bounds()) do
+			step()
+		end
+	end
+
 	local function parseBoolean()
 		local v
 		if toml:sub(cursor, cursor + 3) == "true" then
@@ -337,6 +342,8 @@ TOML.parse = function(toml, options)
 			return parseNumber()
 		elseif char() == "[" then
 			return parseArray()
+		elseif char() == "{" then
+			return parseInlineTable()
 		else
 			return parseBoolean()
 		end
@@ -344,8 +351,8 @@ TOML.parse = function(toml, options)
 		-- %d%d%d%d%-[0-1][0-9]%-[0-3][0-9]T[0-2][0-9]%:[0-6][0-9]%:[0-6][0-9][Z%:%+%-%.0-9]*
 	end
 
-	-- buffer for table arrays
-	local tableArrays = {}
+	-- track whether the current key was quoted or not
+	local quotedKey = false
 	
 	-- parse the document!
 	while(cursor <= toml:len()) do
@@ -368,7 +375,11 @@ TOML.parse = function(toml, options)
 			-- trim key name
 			buffer = trim(buffer)
 
-			if buffer == "" then
+			if buffer:match("^[0-9]*$") and not quotedKey then
+				buffer = tonumber(buffer)
+			end
+
+			if buffer == "" and not quotedKey then
 				err("Empty key name")
 			end
 
@@ -376,13 +387,14 @@ TOML.parse = function(toml, options)
 			if v then
 				-- if the key already exists in the current object, throw an error
 				if obj[buffer] then
-					err("Cannot redefine key " .. buffer, true)
+					err('Cannot redefine key "' .. buffer .. '"', true)
 				end
 				obj[buffer] = v.value
 			end
 			
 			-- clear the buffer
 			buffer = ""
+			quotedKey = false
 
 			-- skip whitespace and comments
 			skipWhitespace()
@@ -408,62 +420,80 @@ TOML.parse = function(toml, options)
 				step()
 			end
 
-			while(bounds()) do
-				buffer = buffer .. char()
-				step()
-				if char() == "]" then
-					if tableArray and char(1) ~= "]" then
-						err("Mismatching brackets")
-					elseif tableArray then
-						step() -- skip second bracket
-					end
-					break
-				end
-			end
-			step()
-
-			buffer = trim(buffer)
-
 			obj = out
-			local spl = split(buffer, "%.")
-			for i, tbl in pairs(spl) do
-				if tbl == "" then
+
+			local function processKey(isLast)
+				isLast = isLast or false
+				buffer = trim(buffer)
+
+				if not quotedKey and buffer == "" then
 					err("Empty table name")
 				end
 
-				if i == #spl and obj[tbl] and not tableArray and #obj[tbl] > 0 then
+				if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
 					err("Cannot redefine table", true)
 				end
 
-				-- set obj to the appropriate table so we can start filling
-				-- it with values!
-				if tableArrays[tbl] then
-					if buffer ~= tbl and #spl > 1 then
-						obj = tableArrays[tbl]
-					else
-						obj[tbl] = obj[tbl] or {}
-						obj = obj[tbl]
-						if tableArray and i == #spl then
+				-- set obj to the appropriate table so we can start
+				-- filling it with values!
+				if tableArray then
+					-- push onto cache
+					if obj[buffer] then
+						obj = obj[buffer]
+						if isLast then
 							table.insert(obj, {})
-							obj = obj[#obj]
+						end
+						obj = obj[#obj]
+					else
+						obj[buffer] = {}
+						obj = obj[buffer]
+						if isLast then
+							table.insert(obj, {})
+							obj = obj[1]
 						end
 					end
 				else
-					obj[tbl] = obj[tbl] or {}
-					obj = obj[tbl]
-					if tableArray and i == #spl then
-						table.insert(obj, {})
-						obj = obj[#obj]
-					end
+					obj[buffer] = obj[buffer] or {}
+					obj = obj[buffer]
 				end
+			end
 
-				tableArrays[buffer] = obj
+			while(bounds()) do
+				if char() == "]" then
+					if tableArray then
+						if char(1) ~= "]" then
+							err("Mismatching brackets")
+						else
+							step() -- skip inside bracket
+						end
+					end
+					step() -- skip outside bracket
+
+					processKey(true)
+					buffer = ""
+					break
+				elseif char() == '"' or char() == "'" then
+					buffer = parseString().value
+					quotedKey = true
+				elseif char() == "." then
+					step() -- skip period
+					processKey()
+					buffer = ""
+				else
+					buffer = buffer .. char()
+					step()
+				end
 			end
 
 			buffer = ""
+			quotedKey = false
+		elseif (char() == '"' or char() == "'") then
+			-- quoted key
+			buffer = parseString().value
+			quotedKey = true
 		end
 
-		buffer = buffer .. char()
+		buffer = buffer .. (char() ~= "\n" and char() or "")
 		step()
 	end
 
