@@ -219,7 +219,7 @@ TOML.parse = function(toml, options)
 				else
 					err("Invalid exponent")
 				end
-			elseif char():match(ws) or char() == "#" or char() == "\n" or char() == "," or char() == "]" then
+			elseif char():match(ws) or char() == "#" or char() == "\n" or char() == "," or char() == "]" or char() == "}" then
 				break
 			elseif char() == "T" or char() == "Z" then
 				-- parse the date (as a string, since lua has no date object)
@@ -307,9 +307,51 @@ TOML.parse = function(toml, options)
 	end
 
 	local function parseInlineTable()
-		while(bounds()) do
-			step()
+		step() -- skip opening brace
+
+		local buffer = ""
+		local quoted = false
+		local tbl = {}
+
+		while bounds() do
+			if char() == "}" then
+				break
+			elseif char() == "'" or char() == '"' then
+				buffer = parseString().value
+				quoted = true
+			elseif char() == "=" then
+				if not quoted then
+					buffer = trim(buffer)
+				end
+
+				step() -- skip =
+				skipWhitespace()
+
+				if char() == "\n" then
+					err("Newline in inline table")
+				end
+
+				local v = getValue().value
+				tbl[buffer] = v
+
+				skipWhitespace()
+
+				if char() == "," then
+					step()
+				elseif char() == "\n" then
+					err("Newline in inline table")
+				end
+
+				quoted = false
+				buffer = ""
+			else
+				buffer = buffer .. char()
+				step()
+			end
 		end
+		step() -- skip closing brace
+
+		return {value = tbl, type = "array"}
 	end
 
 	local function parseBoolean()
@@ -391,7 +433,7 @@ TOML.parse = function(toml, options)
 				end
 				obj[buffer] = v.value
 			end
-			
+
 			-- clear the buffer
 			buffer = ""
 			quotedKey = false
