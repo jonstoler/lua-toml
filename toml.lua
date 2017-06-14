@@ -619,7 +619,7 @@ TOML.encode = function(tbl)
 					else
 						-- plain ol boring array
 						toml = toml .. k .. " = [\n"
-						for kk, vv in pairs(v) do
+						for kk, vv in pairs(first) do
 							toml = toml .. tostring(vv) .. ",\n"
 						end
 						toml = toml .. "]\n"
