@@ -12,7 +12,7 @@ TOML 0.4.0 compliant Lua library with tests. Serializes TOML into a Lua table, a
 	license = "The Happy License",
 }
 dependencies = {
-	"lua >= 5.2"
+	"lua >= 5.1"
 }
 build = {
 	type = "builtin",
