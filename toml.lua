@@ -1,6 +1,6 @@
 local TOML = {
 	-- denotes the current supported TOML version
-	version = 0.31,
+	version = 0.40,
 
 	-- sets whether the parser should follow the TOML spec strictly
 	-- currently, no errors are thrown for the following rules if strictness is turned off:

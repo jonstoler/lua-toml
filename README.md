@@ -5,7 +5,7 @@
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
 Latest supported version: 0.4.0  
-Current lua-toml version: 1.0.0
+Current lua-toml version: 1.0.1
 
 # Usage
 
