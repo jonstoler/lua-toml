@@ -1,3 +1,6 @@
+# 2.0.0
+* switch to MIT license
+
 # 1.0.1
 * indicate support for TOML 0.4.0 via `TOML.version`
 * fix encoding of simple arrays
