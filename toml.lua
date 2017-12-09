@@ -21,8 +21,8 @@ TOML.parse = function(toml, options)
 	-- the official TOML definition of newline
 	local nl = "[\10"
 	do
-		local crlf = {string.char(224), string.char(180), string.char(138)}
-		nl = nl .. table.concat(crlf)
+		local crlf = "\13\10"
+		nl = nl .. crlf
 	end
 	nl = nl .. "]"
 	

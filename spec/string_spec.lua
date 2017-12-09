@@ -144,4 +144,22 @@ poundcomment = "But there are # some comments here." # Did I # mess you up?]=]
 		assert.same(sol, obj)
 	end)
 
+	it("unicode", function()
+		local obj = TOML.parse[=[
+a = "第五福龍丸"
+b = "東方地霊殿"]=]
+		local sol = {
+			a = "第五福龍丸",
+			b = "東方地霊殿"
+		}
+		assert.same(sol, obj)
+	end)
+
+	it("supports crlf", function()
+		assert.has_error(function()
+			TOML.parse("a = " .. '"' .. "\13\10" .. '"')
+		end)
+		assert.has_no.errors(function() TOML.parse("a = " .. '"' .. "\13" .. '"') end)
+	end)
+
 end)
