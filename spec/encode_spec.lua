@@ -5,7 +5,7 @@ describe("encoding", function()
 
 	it("array", function()
 		local obj = TOML.encode{ a = { "foo","bar" } }
-		local sol = "a = [\nfoo,\nbar,\n]"
+		local sol = "a = [\n\"foo\",\n\"bar\",\n]"
 		assert.same(sol, obj)
 	end)
 end)
