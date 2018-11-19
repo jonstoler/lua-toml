@@ -511,8 +511,15 @@ TOML.parse = function(toml, options)
 						end
 					end
 				else
-					obj[buffer] = obj[buffer] or {}
-					obj = obj[buffer]
+					local newObj = obj[buffer] or {}
+					obj[buffer] = newObj
+					if #newObj > 0 then
+						-- an array is already in progress for this key, so modify its
+						-- last element, instead of the array itself
+						obj = newObj[#newObj]
+					else
+						obj = newObj
+					end
 				end
 			end
 
