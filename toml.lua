@@ -19,12 +19,7 @@ TOML.parse = function(toml, options)
 	local ws = "[\009\032]"
 
 	-- the official TOML definition of newline
-	local nl = "[\10"
-	do
-		local crlf = "\13\10"
-		nl = nl .. crlf
-	end
-	nl = nl .. "]"
+	local nl = "\13?\10"
 	
 	-- stores text data
 	local buffer = ""
