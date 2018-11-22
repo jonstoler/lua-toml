@@ -93,4 +93,43 @@ last_name = "Springsteen"]=]
 		}
 		assert.same(sol, obj)
 	end)
+
+	it("nest-tables", function()
+		local obj = TOML.parse[=[
+[[people]]
+first_name = "Bruce"
+last_name = "Springsteen"
+
+[people.birth]
+date = "September 23, 1949"
+place = "Long Branch, New Jersey"
+
+[people.spouse]
+first_name = "Patti"
+last_name = "Scialfa"
+
+[[people]]
+# an empty element
+
+[[people]]
+first_name = "Eric"
+last_name = "Clapton"
+]=]
+		local sol = {
+			people = {
+				{
+					first_name = "Bruce", last_name = "Springsteen",
+					birth = {
+						date = "September 23, 1949",
+						place = "Long Branch, New Jersey"
+					},
+					spouse = { first_name = "Patti", last_name = "Scialfa" },
+				}, {
+				}, {
+					first_name = "Eric", last_name = "Clapton"
+				}
+			}
+		}
+		assert.same(sol, obj)
+	end)
 end)
