@@ -614,8 +614,13 @@ TOML.encode = function(tbl)
 					else
 						-- plain ol boring array
 						toml = toml .. k .. " = [\n"
+						local quote = '"'
 						for kk, vv in pairs(first) do
-							toml = toml .. tostring(vv) .. ",\n"
+							if type(vv) == "string" then
+								toml = toml .. quote .. tostring(vv) .. quote .. ",\n"
+							else
+								toml = toml .. tostring(vv) .. ",\n"
+							end
 						end
 						toml = toml .. "]\n"
 					end
