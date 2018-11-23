@@ -162,4 +162,8 @@ b = "東方地霊殿"]=]
 		assert.has_no.errors(function() TOML.parse("a = " .. '"' .. "\13" .. '"') end)
 	end)
 
+	it("supports crlf at end of the data", function()
+		assert.has_no.errors(function() TOML.parse('a = "b"\13\10') end)
+	end)
+
 end)
