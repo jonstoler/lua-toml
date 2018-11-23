@@ -39,6 +39,13 @@ TOML.parse = function(toml, options)
 		return toml:sub(cursor + n, cursor + n)
 	end
 
+	-- match newline at the next position
+	local function matchnl(n)
+		n = n or 0
+		n = cursor + n
+		return 1 == toml:sub(n,n+1):find(nl)
+	end
+
 	-- moves the current position forward n (default: 1) characters
 	local function step(n)
 		n = n or 1
@@ -107,7 +114,7 @@ TOML.parse = function(toml, options)
 		step(multiline and 3 or 1)
 
 		while(bounds()) do
-			if multiline and char():match(nl) and str == "" then
+			if multiline and matchnl() and str == "" then
 				-- skip line break line at the beginning of multiline string
 				step()
 			end
@@ -125,17 +132,17 @@ TOML.parse = function(toml, options)
 				end
 			end
 
-			if char():match(nl) and not multiline then
+			if matchnl() and not multiline then
 				err("Single-line string cannot contain line break")
 			end
 
 			-- if we're in a double-quoted string, watch for escape characters!
 			if quoteType == '"' and char() == "\\" then
-				if multiline and char(1):match(nl) then
+				if multiline and matchnl(1) then
 					-- skip until first non-whitespace character
 					step(1) -- go past the line break
 					while(bounds()) do
-						if not char():match(ws) and not char():match(nl) then
+						if not char():match(ws) and not matchnl() then
 							break
 						end
 						step()
@@ -230,13 +237,13 @@ TOML.parse = function(toml, options)
 				else
 					err("Invalid exponent")
 				end
-			elseif char():match(ws) or char() == "#" or char():match(nl) or char() == "," or char() == "]" or char() == "}" then
+			elseif char():match(ws) or char() == "#" or matchnl() or char() == "," or char() == "]" or char() == "}" then
 				break
 			elseif char() == "T" or char() == "Z" then
 				-- parse the date (as a string, since lua has no date object)
 				date = true
 				while(bounds()) do
-					if char() == "," or char() == "]" or char() == "#" or char():match(nl) or char():match(ws) then
+					if char() == "," or char() == "]" or char() == "#" or matchnl() or char():match(ws) then
 						break
 					end
 					num = num .. char()
@@ -283,12 +290,12 @@ TOML.parse = function(toml, options)
 		while(bounds()) do
 			if char() == "]" then
 				break
-			elseif char():match(nl) then
+			elseif matchnl() then
 				-- skip
 				step()
 				skipWhitespace()
 			elseif char() == "#" then
-				while(bounds() and not char():match(nl)) do
+				while(bounds() and not matchnl()) do
 					step()
 				end
 			else
@@ -338,7 +345,7 @@ TOML.parse = function(toml, options)
 				step() -- skip =
 				skipWhitespace()
 
-				if char():match(nl) then
+				if matchnl() then
 					err("Newline in inline table")
 				end
 
@@ -349,7 +356,7 @@ TOML.parse = function(toml, options)
 
 				if char() == "," then
 					step()
-				elseif char():match(nl) then
+				elseif matchnl() then
 					err("Newline in inline table")
 				end
 
@@ -379,7 +386,7 @@ TOML.parse = function(toml, options)
 
 		skipWhitespace()
 		if char() == "#" then
-			while(not char():match(nl)) do
+			while(not matchnl()) do
 				step()
 			end
 		end
@@ -412,12 +419,12 @@ TOML.parse = function(toml, options)
 
 		-- skip comments and whitespace
 		if char() == "#" then
-			while(not char():match(nl)) do
+			while(not matchnl()) do
 				step()
 			end
 		end
 
-		if char():match(nl) then
+		if matchnl() then
 			-- skip
 		end
 
@@ -452,14 +459,14 @@ TOML.parse = function(toml, options)
 			-- skip whitespace and comments
 			skipWhitespace()
 			if char() == "#" then
-				while(bounds() and not char():match(nl)) do
+				while(bounds() and not matchnl()) do
 					step()
 				end
 			end
 
 			-- if there is anything left on this line after parsing a key and its value,
 			-- throw an error
-			if not char():match(nl) and cursor < toml:len() then
+	    if cursor < toml:len() and not matchnl() then
 				err("Invalid primitive")
 			end
 		elseif char() == "[" then
@@ -553,7 +560,7 @@ TOML.parse = function(toml, options)
 			quotedKey = true
 		end
 
-		buffer = buffer .. (char():match(nl) and "" or char())
+		buffer = buffer .. (matchnl() and "" or char())
 		step()
 	end
 
