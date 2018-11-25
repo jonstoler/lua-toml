@@ -10,6 +10,39 @@ local TOML = {
 	strict = true,
 }
 
+local date_metatable = {
+	__tostring = function( t )
+		local rep = ''
+		if t.year then
+			rep = rep .. string.format("%04d-%02d-%02d", t.year, t.month, t.day)
+		end
+		if t.hour then
+			if t.year then
+				rep = rep .. ' '
+			end
+			rep = rep .. string.format("%02d:%02d:%.3f", t.hour, t.min, t.sec)
+		end
+		if t.zone then
+			if t.zone >= 0 then
+				rep = rep .. '+'
+			end
+			rep = rep .. string.format("%02d:00", t.zone)
+		end
+		return rep
+	end,
+}
+
+local setmetatable, getmetatable = setmetatable, getmetatable
+
+TOML.datefy = function( tab )
+  -- TODO : VALIDATE !
+  return setmetatable(tab, date_metatable)
+end
+
+TOML.isdate = function( tab )
+  return getmetatable( tab ) == date_metatable
+end
+
 -- converts TOML data into a lua table
 TOML.parse = function(toml, options)
 	options = options or {}
@@ -218,6 +251,106 @@ TOML.parse = function(toml, options)
 		return {value = str, type = "string"}
 	end
 
+	local function matchDate()
+		local year, month, day, n =
+			toml:sub(cursor, cursor + 10):match('^(%d%d%d%d)%-([0-1][0-9])%-([0-3][0-9])()')
+
+		if not year then return nil end
+		step(n-1)
+
+		return year, month, day
+	end
+
+	local function matchTime()
+		local hour, minute, second, n =
+			toml:sub(cursor, cursor + 19):match('^([0-2][0-9])%:([0-6][0-9])%:(%d+%.?%d*)()')
+
+		if not hour then return nil end
+		step(n-1)
+
+		return hour, minute, second
+	end
+
+	local function matchTimezone()
+		local eastwest, offset, zero, n =
+			toml:sub(cursor, cursor + 6):match('^([%+%-])([0-9][0-9])%:([0-9][0-9])()')
+
+		if not eastwest then return nil end
+		step(n-1)
+
+		return eastwest .. offset
+	end
+
+	local function parseDate()
+
+		local year, month, day = matchDate()
+		if not year then err("Invalid date") end
+
+		local hour, minute, second = '', '', '', ''
+
+		local date_time_separator = false
+		if char():match('[T ]') then
+			step(1)
+			date_time_separator = true
+		end
+
+		if date_time_separator then
+			hour, minute, second, n = matchTime()
+			if not hour then err("Invalid date") end
+		end
+
+		local zone
+		if char():match('Z') then
+			step(1)
+			zone = 0
+		else
+			local timezone = matchTimezone()
+			if timezone then
+				zone = tonumber(timezone)
+			end
+		end
+
+		local value = {
+			year = tonumber(year),
+			month = tonumber(month),
+			day = tonumber(day),
+			hour = tonumber(hour),
+			min = tonumber(minute),
+			sec = tonumber(second),
+			zone = zone,
+		}
+
+		local e
+		value, e = TOML.datefy(value)
+		if not value then
+			err(e)
+		end
+
+		return {
+			type = "date",
+			value = value,
+		}
+	end
+
+	local function parseTime()
+		hour, minute, second, n = matchTime()
+		if not hour then err("Invalid date") end
+
+		local value = {
+			hour = tonumber(hour),
+			min = tonumber(minute),
+			sec = tonumber(second),
+		}
+
+		local value, e = TOML.datefy(value)
+		if not value then err(e) end
+
+		return {
+			type = "date",
+			value = value,
+		}
+	end
+
 	local function parseNumber()
 		local num = ""
 		local exp
@@ -398,6 +531,10 @@ TOML.parse = function(toml, options)
 	function getValue()
 		if char() == '"' or char() == "'" then
 			return parseString()
+		elseif toml:sub(cursor):match("^%d%d%d%d%-%d%d%-%d%d") then
+			return parseDate()
+		elseif toml:sub(cursor):match("^%d%d%:%d%d%:%d%d") then
+			return parseTime()
 		elseif char():match("[%+%-0-9]") then
 			return parseNumber()
 		elseif char() == "[" then
@@ -597,6 +734,8 @@ TOML.encode = function(tbl)
 				v = v:gsub('"', '\\"')
 				v = v:gsub("/", "\\/")
 				toml = toml .. k .. " = " .. quote .. v .. quote .. "\n"
+			elseif type(v) == "table" and getmetatable(v) == date_metatable then
+				toml = toml .. k .. " = " .. tostring(v) .. "\n"
 			elseif type(v) == "table" then
 				local array, arrayTable = true, true
 				local first = {}

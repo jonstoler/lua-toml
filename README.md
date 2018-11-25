@@ -1,7 +1,5 @@
 # toml.lua
 
-<img src="https://travis-ci.org/jonstoler/lua-toml.svg" />
-
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
 Latest supported version: 0.4.0  
@@ -23,7 +21,7 @@ or:
 
 <span></span>
 
-> Note: For the moment, dates are *not* supported, since there is no simple way to serialize them in lua.
+> Note: For the moment, a basic implementation of dates is under test.
 
 # License
 
