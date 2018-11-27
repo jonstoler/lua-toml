@@ -74,7 +74,7 @@ end)
 describe("datetime encoding", function()
 
 	it("encode date in TOML", function()
-		local obj = [=[datetime = 2018-06-21 16:17:18.190+00:00]=]
+		local obj = [=[datetime = 2018-06-21 16:17:18.19+00:00]=]
 		local sol = TOML.encode {
 			datetime = TOML.datefy{
 				year = 2018,
@@ -82,7 +82,7 @@ describe("datetime encoding", function()
 				day = 21,
 				hour = 16,
 				min = 17,
-				sec = 18.19,
+				sec = 18.190,
 				zone = 0,
 			}
 		}
@@ -99,7 +99,7 @@ describe("datetime encoding", function()
 			sec = 18.19,
 			zone = 0,
 		})
-		local sol = [[2018-06-21 16:17:18.190+00:00]]
+		local sol = [[2018-06-21 16:17:18.19+00:00]]
 		assert.same(sol, obj)
 	end)
 
@@ -113,7 +113,21 @@ describe("datetime encoding", function()
 			sec = 18.19,
 			zone = -5,
 		})
-		local sol = [[2018-06-21 16:17:18.190-05:00]]
+		local sol = [[2018-06-21 16:17:18.19-05:00]]
+		assert.same(sol, obj)
+	end)
+
+	it("number of digits for the seconds", function()
+		local obj = tostring(TOML.datefy {
+			year = 2018,
+			month = 6,
+			day = 21,
+			hour = 16,
+			min = 17,
+			sec = 0,
+			zone = -5,
+		})
+		local sol = [[2018-06-21 16:17:00-05:00]]
 		assert.same(sol, obj)
 	end)
 end)

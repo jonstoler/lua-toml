@@ -20,7 +20,12 @@ local date_metatable = {
 			if t.year then
 				rep = rep .. ' '
 			end
-			rep = rep .. string.format("%02d:%02d:%.3f", t.hour, t.min, t.sec)
+			rep = rep .. string.format("%02d:%02d:", t.hour, t.min)
+			local sec, frac = math.modf( t.sec )
+			rep = rep .. string.format("%02d", sec)
+			if frac > 0 then
+				rep = rep .. tostring(frac):gsub("0(.-)0*$","%1")
+			end
 		end
 		if t.zone then
 			if t.zone >= 0 then
