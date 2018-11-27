@@ -300,6 +300,7 @@ TOML.parse = function(toml, options)
 			date_time_separator = true
 		end
 
+		local n
 		if date_time_separator then
 			hour, minute, second, n = matchTime()
 			if not hour then err("Invalid date") end
@@ -339,7 +340,7 @@ TOML.parse = function(toml, options)
 	end
 
 	local function parseTime()
-		hour, minute, second, n = matchTime()
+		local hour, minute, second, n = matchTime()
 		if not hour then err("Invalid date") end
 
 		local value = {
