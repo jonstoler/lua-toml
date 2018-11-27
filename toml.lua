@@ -695,10 +695,11 @@ TOML.parse = function(toml, options)
 			-- quoted key
 			buffer = parseString().value
 			quotedKey = true
-		end
 
-		buffer = buffer .. (matchnl() and "" or char())
-		step()
+    else
+			buffer = buffer .. (matchnl() and "" or char())
+			step()
+		end
 	end
 
 	return out

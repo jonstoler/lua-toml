@@ -12,6 +12,15 @@ answer=42]=]
 		assert.same(sol, obj)
 	end)
 
+	it("quote no space", function()
+		local obj = TOML.parse[=[
+"answer"=42]=]
+		local sol = {
+			answer = 42,
+		}
+		assert.same(sol, obj)
+	end)
+
 	it("bare number", function()
 		local obj = TOML.parse[=[
 1234 = "value"]=]
