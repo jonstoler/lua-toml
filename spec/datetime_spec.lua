@@ -72,6 +72,9 @@ time = 12:00:27.87Z]=]
 end)
 
 describe("datetime encoding", function()
+	setup(function()
+		TOML = require "toml"
+	end)
 
 	it("encode date in TOML", function()
 		local obj = [=[datetime = 2018-06-21 16:17:18.19+00:00]=]
