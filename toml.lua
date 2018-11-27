@@ -394,6 +394,7 @@ TOML.parse = function(toml, options)
 
 		local float = false
 		if num:match("%.") then float = true end
+		if exp then float = true end
 
 		exp = exp and tonumber(exp) or 0
 		num = tonumber(num)

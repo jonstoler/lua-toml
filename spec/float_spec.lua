@@ -36,7 +36,7 @@ exp4 = 6.626e-34]=]
 		local sol = {
 			exp1 = math.floor(5 * 10^22),
 			exp2 = math.floor(1 * 10^6),
-			exp3 = math.floor(-2 * 10^-2),
+			exp3 = -2 * 10^-2,
 			exp4 = 6.626 * 10^-34,
 		}
 		assert.same(sol, obj)
