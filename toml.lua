@@ -399,24 +399,17 @@ TOML.parse = function(toml, options)
 			return {value = num, type = "date"}
 		end
 
-		local float = false
-		if num:match("%.") then float = true end
-		if exp then float = true end
-
 		exp = exp and tonumber(exp) or 0
-		num = tonumber(num)
-
-		if not float then
-			return {
-				-- lua will automatically convert the result
-				-- of a power operation to a float, so we have
-				-- to convert it back to an int with math.floor
-				value = math.floor(num * 10^exp),
-				type = "int",
-			}
+		if exp > 0 then
+			exp = math.floor(10 ^ exp)
+		elseif exp < 0 then
+			exp = 10 ^ exp
+		elseif exp == 0 then
+			exp = 1
 		end
+		num = tonumber(num) * exp
 
-		return {value = num * 10^exp, type = "float"}
+		return {value = num, type = "float"}
 	end
 
 	local parseArray, getValue
@@ -602,6 +595,11 @@ TOML.parse = function(toml, options)
 					err('Cannot redefine key "' .. buffer .. '"', true)
 				end
 				obj[buffer] = v.value
+  -- print('DEBUG a',v.value)
+  -- local xxx=buffer
+  -- local yyy=v.value
+  -- setmetatable(obj,{__newindex=function(a,k,v) print(debug.traceback())if k==xxx then error('',2) end rawset(a,k,v) end , __index=function(a,k) print(debug.traceback()) if k==xxx then return yyy end return rawget(a,k)end})
+  -- print('DEBUG b',obj[xxx])
 			end
 
 			-- clear the buffer
