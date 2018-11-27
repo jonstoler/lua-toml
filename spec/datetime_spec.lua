@@ -69,6 +69,25 @@ time = 12:00:27.87Z]=]
 		}
 		assert.same(sol, obj)
 	end)
+end)
+
+describe("datetime encoding", function()
+
+	it("encode date in TOML", function()
+		local obj = [=[datetime = 2018-06-21 16:17:18.190+00:00]=]
+		local sol = TOML.encode {
+			datetime = TOML.datefy{
+				year = 2018,
+				month = 6,
+				day = 21,
+				hour = 16,
+				min = 17,
+				sec = 18.19,
+				zone = 0,
+			}
+		}
+		assert.same(sol, obj)
+	end)
 
 	it("encode date", function()
 		local obj = tostring(TOML.datefy {
@@ -84,19 +103,17 @@ time = 12:00:27.87Z]=]
 		assert.same(sol, obj)
 	end)
 
-	it("encode date in TOML", function()
-		local obj = [=[datetime = 2018-06-21 16:17:18.190+00:00]=]
-		local sol = TOML.encode {
-			datetime = TOML.datefy{
-				year = 2018,
-				month = 6,
-				day = 21,
-				hour = 16,
-				min = 17,
-				sec = 18.19,
-				zone = 0,
-			}
-		}
+	it("negative zone", function()
+		local obj = tostring(TOML.datefy {
+			year = 2018,
+			month = 6,
+			day = 21,
+			hour = 16,
+			min = 17,
+			sec = 18.19,
+			zone = -5,
+		})
+		local sol = [[2018-06-21 16:17:18.190-05:00]]
 		assert.same(sol, obj)
 	end)
 end)

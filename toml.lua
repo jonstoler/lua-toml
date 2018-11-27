@@ -24,9 +24,10 @@ local date_metatable = {
 		end
 		if t.zone then
 			if t.zone >= 0 then
-				rep = rep .. '+'
+				rep = rep .. '+' .. string.format("%02d:00", t.zone)
+      elseif t.zone < 0 then
+				rep = rep .. '-' .. string.format("%02d:00", -t.zone)
 			end
-			rep = rep .. string.format("%02d:00", t.zone)
 		end
 		return rep
 	end,
