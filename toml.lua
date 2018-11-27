@@ -470,6 +470,7 @@ TOML.parse = function(toml, options)
 			elseif char() == "'" or char() == '"' then
 				buffer = parseString().value
 				quoted = true
+				skipWhitespace()
 			elseif char() == "=" then
 				if not quoted then
 					buffer = trim(buffer)
@@ -496,7 +497,13 @@ TOML.parse = function(toml, options)
 				quoted = false
 				buffer = ""
 			else
-				buffer = buffer .. char()
+				if quoted then
+					if not char():match(ws) then
+						err("Unexpected character after the key")
+					end
+				else
+					buffer = buffer .. char()
+				end
 				step()
 			end
 		end

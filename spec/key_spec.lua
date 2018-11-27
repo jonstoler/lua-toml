@@ -21,6 +21,15 @@ answer=42]=]
 		assert.same(sol, obj)
 	end)
 
+	it("inline table quoted key", function()
+		local obj = TOML.parse[=[
+the = {"answer" = 42}]=]
+		local sol = {
+			the = { answer = 42 },
+		}
+		assert.same(sol, obj)
+	end)
+
 	it("bare number", function()
 		local obj = TOML.parse[=[
 1234 = "value"]=]
