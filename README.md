@@ -21,7 +21,8 @@ or:
 
 <span></span>
 
-> Note: For the moment, a basic implementation of dates is under test.
+> Note 1: Underscore between digits is not supported.
+> Note 2: For the moment, a basic implementation of dates is under test.
 
 # License
 
