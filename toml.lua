@@ -73,23 +73,37 @@ TOML.parse = function(toml, options)
 	end
 
 	-- returns the next n characters from the current position
+	local function getData( a, b )
+		return toml:sub( a and cursor+a or 0, b and cursor+b )
+	end
+
+	-- prevent infinite loops by checking whether the cursor is
+	-- at the end of the document or not
+	local function bounds()
+		return cursor <= toml:len()
+	end
+
+	-- Check if we are at end of the data
+	local function dataEnd()
+		return cursor >= toml:len()
+	end
+
+	-- returns the next n characters from the current position
 	local function char(n)
 		n = n or 0
-		return toml:sub(cursor + n, cursor + n)
+		return getData(n, n)
 	end
 
 	-- Match official TOML definition of whitespace
 	local function matchWs(n)
 		n = n or 0
-		n = cursor + n
-		return toml:sub(n,n):match("[\009\032]")
+		return getData(n,n):match("[\009\032]")
 	end
 
 	-- Match the official TOML definition of newline
 	local function matchnl(n)
 		n = n or 0
-		n = cursor + n
-		return toml:sub(n,n+1):match("^\13?\10")
+		return getData(n,n+1):match("^\13?\10")
 	end
 
 	-- move forward until the next non-whitespace character
@@ -133,12 +147,6 @@ TOML.parse = function(toml, options)
 			end
 			error("TOML: " .. message .. " on line " .. line .. ".", 4)
 		end
-	end
-
-	-- prevent infinite loops by checking whether the cursor is
-	-- at the end of the document or not
-	local function bounds()
-		return cursor <= toml:len()
 	end
 
 	local function parseString()
@@ -260,7 +268,7 @@ TOML.parse = function(toml, options)
 
 	local function matchDate()
 		local year, month, day, n =
-			toml:sub(cursor, cursor + 10):match('^(%d%d%d%d)%-([0-1][0-9])%-([0-3][0-9])()')
+			getData(0, 10):match('^(%d%d%d%d)%-([0-1][0-9])%-([0-3][0-9])()')
 
 		if not year then return nil end
 		step(n-1)
@@ -270,7 +278,7 @@ TOML.parse = function(toml, options)
 
 	local function matchTime()
 		local hour, minute, second, n =
-			toml:sub(cursor, cursor + 19):match('^([0-2][0-9])%:([0-6][0-9])%:(%d+%.?%d*)()')
+			getData(0, 19):match('^([0-2][0-9])%:([0-6][0-9])%:(%d+%.?%d*)()')
 
 		if not hour then return nil end
 		step(n-1)
@@ -280,7 +288,7 @@ TOML.parse = function(toml, options)
 
 	local function matchTimezone()
 		local eastwest, offset, zero, n =
-			toml:sub(cursor, cursor + 6):match('^([%+%-])([0-9][0-9])%:([0-9][0-9])()')
+			getData(0, 6):match('^([%+%-])([0-9][0-9])%:([0-9][0-9])()')
 
 		if not eastwest then return nil end
 		step(n-1)
@@ -516,10 +524,10 @@ TOML.parse = function(toml, options)
 
 	local function parseBoolean()
 		local v
-		if toml:sub(cursor, cursor + 3) == "true" then
+		if getData(0, 3) == "true" then
 			step(4)
 			v = {value = true, type = "boolean"}
-		elseif toml:sub(cursor, cursor + 4) == "false" then
+		elseif getData(0, 4) == "false" then
 			step(5)
 			v = {value = false, type = "boolean"}
 		else
@@ -540,9 +548,9 @@ TOML.parse = function(toml, options)
 	function getValue()
 		if char() == '"' or char() == "'" then
 			return parseString()
-		elseif toml:sub(cursor):match("^%d%d%d%d%-%d%d%-%d%d") then
+		elseif getData(0):match("^%d%d%d%d%-%d%d%-%d%d") then
 			return parseDate()
-		elseif toml:sub(cursor):match("^%d%d%:%d%d%:%d%d") then
+		elseif getData(0):match("^%d%d%:%d%d%:%d%d") then
 			return parseTime()
 		elseif char():match("[%+%-0-9]") then
 			return parseNumber()
@@ -599,7 +607,7 @@ TOML.parse = function(toml, options)
 		local quotedKey = false
 		
 		-- parse the document!
-		while(cursor <= toml:len()) do
+		while(bounds()) do
 	
 			-- skip comments and whitespace
 			if char() == "#" then
@@ -655,7 +663,7 @@ TOML.parse = function(toml, options)
 
 				-- if there is anything left on this line after parsing a key and its value,
 				-- throw an error
-				if cursor < toml:len() and not matchnl() then
+				if not dataEnd() and not matchnl() then
 					err("Invalid primitive")
 				end
 			elseif char() == "[" then
