@@ -50,9 +50,10 @@ TOML.isdate = function( tab )
 end
 
 -- converts TOML data into a lua table
-TOML.parse = function(toml, options)
+TOML.multistep_parser = function (options)
 	options = options or {}
 	local strict = (options.strict ~= nil and options.strict or TOML.strict)
+	local toml = ''
 
 	-- the output table
 	local out = {}
@@ -66,6 +67,24 @@ TOML.parse = function(toml, options)
 	-- the current location within the string to parse
 	local cursor = 1
 
+	-- remember that the last chunk was already read
+	local stream_ended = false
+
+	-- read n characters (at least) or chunk terminator (nil)
+	local function getNewData(n)
+		while not stream_ended do
+			if cursor + (n or 0) < #toml then break end
+			local new_data = coroutine.yield(out) -- TODO : error handling
+			if new_data == nil then
+				stream_ended = true
+				break
+			end
+			toml = toml:sub(cursor)
+			cursor = 1
+			toml = toml .. new_data
+		end
+	end
+
 	-- moves the current position forward n (default: 1) characters
 	local function step(n)
 		n = n or 1
@@ -74,12 +93,17 @@ TOML.parse = function(toml, options)
 
 	-- returns the next n characters from the current position
 	local function getData( a, b )
-		return toml:sub( a and cursor+a or 0, b and cursor+b )
+		getNewData(b)
+		a = a or 0
+		b = b or (toml:len() - cursor)
+		return toml:sub( cursor + a, cursor + b )
 	end
 
 	-- prevent infinite loops by checking whether the cursor is
 	-- at the end of the document or not
 	local function bounds()
+		if cursor <= toml:len() then return true end
+		getNewData(1)
 		return cursor <= toml:len()
 	end
 
@@ -132,20 +156,14 @@ TOML.parse = function(toml, options)
 		return result
 	end
 
+	-- TODO : report source line ; check stack level
 	-- produce a parsing error message
 	-- the error contains the line number of the current position
 	local function err(message, strictOnly)
 		if not strictOnly or (strictOnly and strict) then
 			local line = 1
 			local c = 0
-			for l in toml:gmatch("(.-)\n") do
-				c = c + l:len()
-				if c >= cursor then
-					break
-				end
-				line = line + 1
-			end
-			error("TOML: " .. message .. " on line " .. line .. ".", 4)
+			error("TOML: " .. message .. ".", 4)
 		end
 	end
 
@@ -548,9 +566,9 @@ TOML.parse = function(toml, options)
 	function getValue()
 		if char() == '"' or char() == "'" then
 			return parseString()
-		elseif getData(0):match("^%d%d%d%d%-%d%d%-%d%d") then
+		elseif getData(0,5):match("^%d%d%d%d%-%d") then
 			return parseDate()
-		elseif getData(0):match("^%d%d%:%d%d%:%d%d") then
+		elseif getData(0,3):match("^%d%d%:%d") then
 			return parseTime()
 		elseif char():match("[%+%-0-9]") then
 			return parseNumber()
@@ -725,10 +743,19 @@ TOML.parse = function(toml, options)
 				step()
 			end
 		end
+
+		return out
 	end
 
-	parse()
-	return out
+	local coparse = coroutine.wrap(parse)
+	coparse()
+	return coparse
+end
+
+TOML.parse = function(data)
+	local cp = TOML.multistep_parser(options)
+	cp(data)
+	return cp()
 end
 
 TOML.encode = function(tbl)
