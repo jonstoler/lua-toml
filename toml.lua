@@ -557,51 +557,44 @@ TOML.parse = function(toml, options)
 		-- %d%d%d%d%-[0-1][0-9]%-[0-3][0-9]T[0-2][0-9]%:[0-6][0-9]%:[0-6][0-9][Z%:%+%-%.0-9]*
 	end
 
-	local function processKey(isLast, tableArray, quotedKey)
-		isLast = isLast or false
-		buffer = trim(buffer)
-
-		if not quotedKey and buffer == "" then
-			err("Empty table name")
-		end
-
-		if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
-			err("Cannot redefine table", true)
-		end
-
-		-- set obj to the appropriate table so we can start
-		-- filling it with values!
-		if tableArray then
-			-- push onto cache
-			if obj[buffer] then
-				obj = obj[buffer]
-				if isLast then
-					table.insert(obj, {})
-				end
-				obj = obj[#obj]
-			else
-				obj[buffer] = {}
-				obj = obj[buffer]
-				if isLast then
-					table.insert(obj, {})
-					obj = obj[1]
-				end
-			end
-		else
-			local newObj = obj[buffer] or {}
-			obj[buffer] = newObj
-			if #newObj > 0 then
-				-- an array is already in progress for this key, so modify its
-				-- last element, instead of the array itself
-				obj = newObj[#newObj]
-			else
-				obj = newObj
-			end
-		end
-	end
-
 	local function parse()
-			
+
+		local function processKey(isLast, tableArray)
+			if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
+				err("Cannot redefine table", true)
+			end
+
+			-- set obj to the appropriate table so we can start
+			-- filling it with values!
+			if tableArray then
+				-- push onto cache
+				if obj[buffer] then
+					obj = obj[buffer]
+					if isLast then
+						table.insert(obj, {})
+					end
+					obj = obj[#obj]
+				else
+					obj[buffer] = {}
+					obj = obj[buffer]
+					if isLast then
+						table.insert(obj, {})
+						obj = obj[1]
+					end
+				end
+			else
+				local newObj = obj[buffer] or {}
+				obj[buffer] = newObj
+				if #newObj > 0 then
+					-- an array is already in progress for this key, so modify its
+					-- last element, instead of the array itself
+					obj = newObj[#newObj]
+				else
+					obj = newObj
+				end
+			end
+		end
+
 		-- track whether the current key was quoted or not
 		local quotedKey = false
 		
@@ -688,7 +681,10 @@ TOML.parse = function(toml, options)
 							end
 						end
 						step() -- skip outside bracket
-
+						buffer = trim(buffer)
+						if not quotedKey and buffer == "" then
+							err("Empty table name")
+						end
 						processKey(true, tableArray, quotedKey)
 						buffer = ""
 						break
@@ -697,7 +693,11 @@ TOML.parse = function(toml, options)
 						quotedKey = true
 					elseif char() == "." then
 						step() -- skip period
-						processKey(nil, tableArray, quotedKey)
+						buffer = trim(buffer)
+						if not quotedKey and buffer == "" then
+							err("Empty table name")
+						end
+						processKey(false, tableArray, quotedKey)
 						buffer = ""
 					else
 						buffer = buffer .. char()
