@@ -54,36 +54,17 @@ TOML.parse = function(toml, options)
 	options = options or {}
 	local strict = (options.strict ~= nil and options.strict or TOML.strict)
 
-	-- the official TOML definition of whitespace
-	local ws = "[\009\032]"
-
-	-- the official TOML definition of newline
-	local nl = "\13?\10"
-	
-	-- stores text data
-	local buffer = ""
-
-	-- the current location within the string to parse
-	local cursor = 1
-
 	-- the output table
 	local out = {}
 
 	-- the current table to write to
 	local obj = out
 
-	-- returns the next n characters from the current position
-	local function char(n)
-		n = n or 0
-		return toml:sub(cursor + n, cursor + n)
-	end
+	-- stores text data
+	local buffer = ""
 
-	-- match newline at the next position
-	local function matchnl(n)
-		n = n or 0
-		n = cursor + n
-		return 1 == toml:sub(n,n+1):find(nl)
-	end
+	-- the current location within the string to parse
+	local cursor = 1
 
 	-- moves the current position forward n (default: 1) characters
 	local function step(n)
@@ -91,9 +72,29 @@ TOML.parse = function(toml, options)
 		cursor = cursor + n
 	end
 
+	-- returns the next n characters from the current position
+	local function char(n)
+		n = n or 0
+		return toml:sub(cursor + n, cursor + n)
+	end
+
+	-- Match official TOML definition of whitespace
+	local function matchWs(n)
+		n = n or 0
+		n = cursor + n
+		return toml:sub(n,n):match("[\009\032]")
+	end
+
+	-- Match the official TOML definition of newline
+	local function matchnl(n)
+		n = n or 0
+		n = cursor + n
+		return toml:sub(n,n+1):match("^\13?\10")
+	end
+
 	-- move forward until the next non-whitespace character
 	local function skipWhitespace()
-		while(char():match(ws)) do
+		while(matchWs()) do
 			step()
 		end
 	end
@@ -123,7 +124,7 @@ TOML.parse = function(toml, options)
 		if not strictOnly or (strictOnly and strict) then
 			local line = 1
 			local c = 0
-			for l in toml:gmatch("(.-)" .. nl) do
+			for l in toml:gmatch("(.-)\n") do
 				c = c + l:len()
 				if c >= cursor then
 					break
@@ -181,7 +182,7 @@ TOML.parse = function(toml, options)
 					-- skip until first non-whitespace character
 					step(1) -- go past the line break
 					while(bounds()) do
-						if not char():match(ws) and not matchnl() then
+						if not matchWs() and not matchnl() then
 							break
 						end
 						step()
@@ -377,13 +378,13 @@ TOML.parse = function(toml, options)
 				else
 					err("Invalid exponent")
 				end
-			elseif char():match(ws) or char() == "#" or matchnl() or char() == "," or char() == "]" or char() == "}" then
+			elseif matchWs() or char() == "#" or matchnl() or char() == "," or char() == "]" or char() == "}" then
 				break
 			elseif char() == "T" or char() == "Z" then
 				-- parse the date (as a string, since lua has no date object)
 				date = true
 				while(bounds()) do
-					if char() == "," or char() == "]" or char() == "#" or matchnl() or char():match(ws) then
+					if char() == "," or char() == "]" or char() == "#" or matchnl() or matchWs() then
 						break
 					end
 					num = num .. char()
@@ -499,7 +500,7 @@ TOML.parse = function(toml, options)
 				buffer = ""
 			else
 				if quoted then
-					if not char():match(ws) then
+					if not matchWs() then
 						err("Unexpected character after the key")
 					end
 				else
