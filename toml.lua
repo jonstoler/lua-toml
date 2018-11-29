@@ -30,7 +30,7 @@ local date_metatable = {
 		if t.zone then
 			if t.zone >= 0 then
 				rep = rep .. '+' .. string.format("%02d:00", t.zone)
-      elseif t.zone < 0 then
+			elseif t.zone < 0 then
 				rep = rep .. '-' .. string.format("%02d:00", -t.zone)
 			end
 		end
@@ -41,12 +41,12 @@ local date_metatable = {
 local setmetatable, getmetatable = setmetatable, getmetatable
 
 TOML.datefy = function( tab )
-  -- TODO : VALIDATE !
-  return setmetatable(tab, date_metatable)
+	-- TODO : VALIDATE !
+	return setmetatable(tab, date_metatable)
 end
 
 TOML.isdate = function( tab )
-  return getmetatable( tab ) == date_metatable
+	return getmetatable( tab ) == date_metatable
 end
 
 -- converts TOML data into a lua table
@@ -556,165 +556,169 @@ TOML.parse = function(toml, options)
 		-- %d%d%d%d%-[0-1][0-9]%-[0-3][0-9]T[0-2][0-9]%:[0-6][0-9]%:[0-6][0-9][Z%:%+%-%.0-9]*
 	end
 
-	-- track whether the current key was quoted or not
-	local quotedKey = false
-	
-	-- parse the document!
-	while(cursor <= toml:len()) do
+	local function processKey(isLast, tableArray, quotedKey)
+		isLast = isLast or false
+		buffer = trim(buffer)
 
-		-- skip comments and whitespace
-		if char() == "#" then
-			while(not matchnl()) do
-				step()
-			end
+		if not quotedKey and buffer == "" then
+			err("Empty table name")
 		end
 
-		if matchnl() then
-			-- skip
+		if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
+			err("Cannot redefine table", true)
 		end
 
-		if char() == "=" then
-			step()
-			skipWhitespace()
-			
-			-- trim key name
-			buffer = trim(buffer)
-
-			if buffer:match("^[0-9]*$") and not quotedKey then
-				buffer = tonumber(buffer)
-			end
-
-			if buffer == "" and not quotedKey then
-				err("Empty key name")
-			end
-
-			local v = getValue()
-			if v then
-				-- if the key already exists in the current object, throw an error
-				if obj[buffer] then
-					err('Cannot redefine key "' .. buffer .. '"', true)
+		-- set obj to the appropriate table so we can start
+		-- filling it with values!
+		if tableArray then
+			-- push onto cache
+			if obj[buffer] then
+				obj = obj[buffer]
+				if isLast then
+					table.insert(obj, {})
 				end
-				obj[buffer] = v.value
-  -- print('DEBUG a',v.value)
-  -- local xxx=buffer
-  -- local yyy=v.value
-  -- setmetatable(obj,{__newindex=function(a,k,v) print(debug.traceback())if k==xxx then error('',2) end rawset(a,k,v) end , __index=function(a,k) print(debug.traceback()) if k==xxx then return yyy end return rawget(a,k)end})
-  -- print('DEBUG b',obj[xxx])
-			end
-
-			-- clear the buffer
-			buffer = ""
-			quotedKey = false
-
-			-- skip whitespace and comments
-			skipWhitespace()
-			if char() == "#" then
-				while(bounds() and not matchnl()) do
-					step()
+				obj = obj[#obj]
+			else
+				obj[buffer] = {}
+				obj = obj[buffer]
+				if isLast then
+					table.insert(obj, {})
+					obj = obj[1]
 				end
 			end
-
-			-- if there is anything left on this line after parsing a key and its value,
-			-- throw an error
-	    if cursor < toml:len() and not matchnl() then
-				err("Invalid primitive")
+		else
+			local newObj = obj[buffer] or {}
+			obj[buffer] = newObj
+			if #newObj > 0 then
+				-- an array is already in progress for this key, so modify its
+				-- last element, instead of the array itself
+				obj = newObj[#newObj]
+			else
+				obj = newObj
 			end
-		elseif char() == "[" then
-			buffer = ""
-			step()
-			local tableArray = false
-
-			-- if there are two brackets in a row, it's a table array!
-			if char() == "[" then
-				tableArray = true
-				step()
-			end
-
-			obj = out
-
-			local function processKey(isLast)
-				isLast = isLast or false
-				buffer = trim(buffer)
-
-				if not quotedKey and buffer == "" then
-					err("Empty table name")
-				end
-
-				if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
-					err("Cannot redefine table", true)
-				end
-
-				-- set obj to the appropriate table so we can start
-				-- filling it with values!
-				if tableArray then
-					-- push onto cache
-					if obj[buffer] then
-						obj = obj[buffer]
-						if isLast then
-							table.insert(obj, {})
-						end
-						obj = obj[#obj]
-					else
-						obj[buffer] = {}
-						obj = obj[buffer]
-						if isLast then
-							table.insert(obj, {})
-							obj = obj[1]
-						end
-					end
-				else
-					local newObj = obj[buffer] or {}
-					obj[buffer] = newObj
-					if #newObj > 0 then
-						-- an array is already in progress for this key, so modify its
-						-- last element, instead of the array itself
-						obj = newObj[#newObj]
-					else
-						obj = newObj
-					end
-				end
-			end
-
-			while(bounds()) do
-				if char() == "]" then
-					if tableArray then
-						if char(1) ~= "]" then
-							err("Mismatching brackets")
-						else
-							step() -- skip inside bracket
-						end
-					end
-					step() -- skip outside bracket
-
-					processKey(true)
-					buffer = ""
-					break
-				elseif char() == '"' or char() == "'" then
-					buffer = parseString().value
-					quotedKey = true
-				elseif char() == "." then
-					step() -- skip period
-					processKey()
-					buffer = ""
-				else
-					buffer = buffer .. char()
-					step()
-				end
-			end
-
-			buffer = ""
-			quotedKey = false
-		elseif (char() == '"' or char() == "'") then
-			-- quoted key
-			buffer = parseString().value
-			quotedKey = true
-
-    else
-			buffer = buffer .. (matchnl() and "" or char())
-			step()
 		end
 	end
 
+	local function parse()
+			
+		-- track whether the current key was quoted or not
+		local quotedKey = false
+		
+		-- parse the document!
+		while(cursor <= toml:len()) do
+	
+			-- skip comments and whitespace
+			if char() == "#" then
+				while(not matchnl()) do
+					step()
+				end
+			end
+
+			if matchnl() then
+				-- skip
+			end
+
+			if char() == "=" then
+				step()
+				skipWhitespace()
+				
+				-- trim key name
+				buffer = trim(buffer)
+
+				if buffer:match("^[0-9]*$") and not quotedKey then
+					buffer = tonumber(buffer)
+				end
+
+				if buffer == "" and not quotedKey then
+					err("Empty key name")
+				end
+
+				local v = getValue()
+				if v then
+					-- if the key already exists in the current object, throw an error
+					if obj[buffer] then
+						err('Cannot redefine key "' .. buffer .. '"', true)
+					end
+					obj[buffer] = v.value
+		-- print('DEBUG a',v.value)
+		-- local xxx=buffer
+		-- local yyy=v.value
+		-- setmetatable(obj,{__newindex=function(a,k,v) print(debug.traceback())if k==xxx then error('',2) end rawset(a,k,v) end , __index=function(a,k) print(debug.traceback()) if k==xxx then return yyy end return rawget(a,k)end})
+		-- print('DEBUG b',obj[xxx])
+				end
+
+				-- clear the buffer
+				buffer = ""
+				quotedKey = false
+
+				-- skip whitespace and comments
+				skipWhitespace()
+				if char() == "#" then
+					while(bounds() and not matchnl()) do
+						step()
+					end
+				end
+
+				-- if there is anything left on this line after parsing a key and its value,
+				-- throw an error
+				if cursor < toml:len() and not matchnl() then
+					err("Invalid primitive")
+				end
+			elseif char() == "[" then
+				buffer = ""
+				step()
+				local tableArray = false
+
+				-- if there are two brackets in a row, it's a table array!
+				if char() == "[" then
+					tableArray = true
+					step()
+				end
+
+				obj = out
+
+				while(bounds()) do
+					if char() == "]" then
+						if tableArray then
+							if char(1) ~= "]" then
+								err("Mismatching brackets")
+							else
+								step() -- skip inside bracket
+							end
+						end
+						step() -- skip outside bracket
+
+						processKey(true, tableArray, quotedKey)
+						buffer = ""
+						break
+					elseif char() == '"' or char() == "'" then
+						buffer = parseString().value
+						quotedKey = true
+					elseif char() == "." then
+						step() -- skip period
+						processKey(nil, tableArray, quotedKey)
+						buffer = ""
+					else
+						buffer = buffer .. char()
+						step()
+					end
+				end
+
+				buffer = ""
+				quotedKey = false
+			elseif (char() == '"' or char() == "'") then
+				-- quoted key
+				buffer = parseString().value
+				quotedKey = true
+
+			else
+				buffer = buffer .. (matchnl() and "" or char())
+				step()
+			end
+		end
+	end
+
+	parse()
 	return out
 end
 
