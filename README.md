@@ -2,7 +2,7 @@
 
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
-Latest supported version: 0.4.0  
+Latest supported version: 0.4.0
 Current lua-toml version: 2.0.0
 
 # Usage
@@ -11,6 +11,15 @@ Current lua-toml version: 2.0.0
 	TOML.parse(string)
 	tomlOut = TOML.encode(table)
 
+To process a file in multiple chunks:
+
+	TOML = require "toml"
+	local parser = TOML.multistep_parser()
+	parser(string_part_1)
+	parser(string_part_2)
+	-- ...
+	local result = parser()
+
 To enable more lua-friendly features (like mixed arrays):
 
 	TOML.strict = false
@@ -18,6 +27,12 @@ To enable more lua-friendly features (like mixed arrays):
 or:
 
 	TOML.parse(string, {strict = false})
+
+or:
+
+	local parser = TOML.multistep_parser{strict = false}
+
+In case of error, nil plus an error message is returned.
 
 <span></span>
 
