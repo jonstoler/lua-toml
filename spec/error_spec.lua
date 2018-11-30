@@ -4,7 +4,7 @@ describe("error api", function()
 	end)
 
 	it("single step error", function()
-		local n, e = toml.parse[[
+		local n, e = TOML.parse[[
 a="a"
 b="b"
 asdf="aaa
@@ -14,7 +14,7 @@ asdf="aaa
 	end)
 
 	it("multi step error", function()
-		local tp = toml.multistep_parser()
+		local tp = TOML.multistep_parser()
 		tp('a="a"\n')
 		tp('b="b"\n')
 		tp('asdf="aaa\n	')
@@ -24,7 +24,7 @@ asdf="aaa
 	end)
 
 	it("partial step error", function()
-		local tp = toml.multistep_parser()
+		local tp = TOML.multistep_parser()
 		assert.same(true, nil ~= tp('a="a"\n'))
 		assert.same(true, nil ~= tp('b="b"\n'))
 		local n, e = tp('asdf="aaa\n	')
