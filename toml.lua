@@ -774,7 +774,7 @@ TOML.multistep_parser = function (options)
 	return coparse
 end
 
-TOML.parse = function(data)
+TOML.parse = function(data, options)
 	local cp = TOML.multistep_parser(options)
 	cp(data)
 	return cp()
