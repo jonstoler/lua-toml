@@ -160,7 +160,9 @@ TOML.multistep_parser = function (options)
 	-- Match the official TOML definition of newline
 	local function matchnl(n)
 		n = n or 0
-		return getData(n,n+1):match("^\13?\10")
+    local c = getData(n,n)
+    if c == '\10' then return '\10' end
+		return getData(n,n+1):match("^\13\10")
 	end
 
 	-- move forward until the next non-whitespace character
@@ -682,11 +684,6 @@ TOML.multistep_parser = function (options)
 						err('Cannot redefine key "' .. buffer .. '"', true)
 					end
 					obj[buffer] = v.value
-		-- print('DEBUG a',v.value)
-		-- local xxx=buffer
-		-- local yyy=v.value
-		-- setmetatable(obj,{__newindex=function(a,k,v) print(debug.traceback())if k==xxx then error('',2) end rawset(a,k,v) end , __index=function(a,k) print(debug.traceback()) if k==xxx then return yyy end return rawget(a,k)end})
-		-- print('DEBUG b',obj[xxx])
 				end
 
 				-- clear the buffer

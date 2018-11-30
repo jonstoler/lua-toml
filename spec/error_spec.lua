@@ -9,8 +9,7 @@ a="a"
 b="b"
 asdf="aaa
 	 ]]
-		assert.same(n, nil)
-		assert.same(e, 'At TOML line 3: Single-line string cannot contain line break.')
+		assert.same('At TOML line 3: Single-line string cannot contain line break.', n or e)
 	end)
 
 	it("multi step error", function()
@@ -19,20 +18,17 @@ asdf="aaa
 		tp('b="b"\n')
 		tp('asdf="aaa\n	')
 		local n, e = tp()
-		assert.same(n, nil)
-		assert.same(e, 'At TOML line 3: Single-line string cannot contain line break.')
+		assert.same('At TOML line 3: Single-line string cannot contain line break.', n or e)
 	end)
 
 	it("partial step error", function()
 		local tp = TOML.multistep_parser()
-		assert.same(true, nil ~= tp('a="a"\n'))
-		assert.same(true, nil ~= tp('b="b"\n'))
+		assert.same(tp('a="a"\n') ~= nil, true)
+		assert.same(tp('b="b"\n') ~= nil, true)
 		local n, e = tp('asdf="aaa\n	')
-		assert.same(n, nil)
-		assert.same(e, 'At TOML line 3: Single-line string cannot contain line break.')
+		assert.same('At TOML line 3: Single-line string cannot contain line break.', n or e)
 		local n, e = tp('c="c"')
-		assert.same(n, nil)
-		assert.same(e, 'At TOML line 3: Single-line string cannot contain line break.')
+		assert.same('At TOML line 3: Single-line string cannot contain line break.', n or e)
 	end)
 end)
 
