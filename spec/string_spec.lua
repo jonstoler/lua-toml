@@ -156,14 +156,18 @@ b = "東方地霊殿"]=]
 	end)
 
 	it("supports crlf", function()
-		assert.has_error(function()
-			TOML.parse("a = " .. '"' .. "\13\10" .. '"')
-		end)
-		assert.has_no.errors(function() TOML.parse("a = " .. '"' .. "\13" .. '"') end)
+		local t, e = TOML.parse("a = " .. '"' .. "\13\10" .. '"')
+		assert.same(t, nil)
+		assert.same(e, 'At TOML line 1: Single-line string cannot contain line break.')
+		local t, e = TOML.parse("a = " .. '"' .. "\13" .. '"')
+		assert.same(t, {a='\r'})
+		assert.same(e, nil)
 	end)
 
 	it("supports crlf at end of the data", function()
-		assert.has_no.errors(function() TOML.parse('a = "b"\13\10') end)
+		local t, e = TOML.parse('a = "b"\13\10')
+		assert.same(t, {a='b'})
+		assert.same(e, nil)
 	end)
 
 end)

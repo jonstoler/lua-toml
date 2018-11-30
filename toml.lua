@@ -57,6 +57,7 @@ TOML.multistep_parser = function (options)
 
 	-- the output table
 	local out = {}
+	local ERR = {}
 
 	-- the current table to write to
 	local obj = out
@@ -70,11 +71,32 @@ TOML.multistep_parser = function (options)
 	-- remember that the last chunk was already read
 	local stream_ended = false
 
+	local nl_count = 1
+
+	local function result_or_error()
+		if #ERR > 0 then return nil, table.concat(ERR) end
+		return out
+	end
+
+	-- produce a parsing error message
+	-- the error contains the line number of the current position
+	local function err(message, strictOnly)
+		if not strictOnly or (strictOnly and strict) then
+			local line = 1
+			local c = 0
+			local msg = "At TOML line " .. nl_count .. ': ' .. message .. "."
+			if not ERR[msg] then
+				ERR[1+#ERR] = msg
+				ERR[msg] = true
+			end
+		end
+	end
+
 	-- read n characters (at least) or chunk terminator (nil)
 	local function getNewData(n)
 		while not stream_ended do
 			if cursor + (n or 0) < #toml then break end
-			local new_data = coroutine.yield(out) -- TODO : error handling
+			local new_data = coroutine.yield(result_or_error())
 			if new_data == nil then
 				stream_ended = true
 				break
@@ -85,18 +107,29 @@ TOML.multistep_parser = function (options)
 		end
 	end
 
-	-- moves the current position forward n (default: 1) characters
-	local function step(n)
-		n = n or 1
-		cursor = cursor + n
-	end
-
+	-- TODO : use 1-based indexing ?
 	-- returns the next n characters from the current position
 	local function getData( a, b )
 		getNewData(b)
 		a = a or 0
 		b = b or (toml:len() - cursor)
 		return toml:sub( cursor + a, cursor + b )
+	end
+
+	-- count how many new lines are in the next n chars
+	local function count_source_line(n)
+		local count = 0
+		for _ in getData(0, n-1):gmatch('\n') do
+			count = count + 1
+		end
+		return count
+	end
+
+	-- moves the current position forward n (default: 1) characters
+	local function step(n)
+		n = n or 1
+		nl_count = nl_count + count_source_line(n)
+		cursor = cursor + n
 	end
 
 	-- prevent infinite loops by checking whether the cursor is
@@ -154,17 +187,6 @@ TOML.multistep_parser = function (options)
 			table.insert(result, match)
 		end
 		return result
-	end
-
-	-- TODO : report source line ; check stack level
-	-- produce a parsing error message
-	-- the error contains the line number of the current position
-	local function err(message, strictOnly)
-		if not strictOnly or (strictOnly and strict) then
-			local line = 1
-			local c = 0
-			error("TOML: " .. message .. ".", 4)
-		end
 	end
 
 	local function parseString()
@@ -744,7 +766,7 @@ TOML.multistep_parser = function (options)
 			end
 		end
 
-		return out
+		return result_or_error()
 	end
 
 	local coparse = coroutine.wrap(parse)
