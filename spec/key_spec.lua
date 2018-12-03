@@ -68,4 +68,10 @@ the = {"answer" = 42}]=]
 		assert.same(sol, obj)
 	end)
 
+	it("additional equal", function()
+		local obj, err = TOML.parse[=[ b = = 1 ]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
 end)

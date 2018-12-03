@@ -160,8 +160,8 @@ TOML.multistep_parser = function (options)
 	-- Match the official TOML definition of newline
 	local function matchnl(n)
 		n = n or 0
-    local c = getData(n,n)
-    if c == '\10' then return '\10' end
+		local c = getData(n,n)
+		if c == '\10' then return '\10' end
 		return getData(n,n+1):match("^\13\10")
 	end
 
@@ -669,14 +669,13 @@ TOML.multistep_parser = function (options)
 				-- trim key name
 				buffer = trim(buffer)
 
-				if buffer:match("^[0-9]*$") and not quotedKey then
+				if buffer:match("^[0-9]+$") and not quotedKey then
 					buffer = tonumber(buffer)
 				end
 
 				if buffer == "" and not quotedKey then
 					err("Empty key name")
 				end
-
 				local v = getValue()
 				if v then
 					-- if the key already exists in the current object, throw an error
