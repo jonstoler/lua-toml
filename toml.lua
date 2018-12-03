@@ -785,6 +785,10 @@ TOML.multistep_parser = function (options)
 				defined_table[obj] = true
 				buffer = ""
 				quotedKey = false
+				skipWhitespace()
+				if bounds() and (not char():match('#') and not matchnl()) then
+					err("Something found on the same line of a table definition")
+				end
 			elseif (char() == '"' or char() == "'") then
 				-- quoted key
 				buffer = parseString().value

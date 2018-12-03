@@ -119,5 +119,12 @@ field = 1
 		assert.same('string', type(err))
 	end)
 
+	it("table on a non dedicated line", function()
+		local obj, err = TOML.parse[=[
+[table] key = "value"
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 
 end)
