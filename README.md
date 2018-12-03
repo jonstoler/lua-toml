@@ -1,9 +1,20 @@
 # toml.lua
 
+Version: 2.1.0
+
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
-Latest supported version: 0.4.0
-Current lua-toml version: 2.0.0
+The core parser is based on TOML 0.4.0. However the underscores between digits
+are not supported. Moreover, for the time being, the date parsing should be
+considered experimental.
+
+The following features of TOML 0.5.0 are supported too (descriptions taken from
+the TOML changelog):
+
+- Add Local Date-Time.
+- Add Local Date.
+- Add Local Time.
+- Allow space (instead of T) to separate date and time in Date-Time.
 
 # Usage
 
@@ -13,7 +24,6 @@ Current lua-toml version: 2.0.0
 
 To process a file in multiple chunks:
 
-	TOML = require "toml"
 	local parser = TOML.multistep_parser()
 	parser(string_part_1)
 	parser(string_part_2)
@@ -35,9 +45,6 @@ or:
 In case of error, nil plus an error message is returned.
 
 <span></span>
-
-> Note 1: Underscore between digits is not supported.
-> Note 2: For the moment, a basic implementation of dates is under test.
 
 # License
 
