@@ -455,6 +455,10 @@ TOML.multistep_parser = function (options)
 			return {value = num, type = "date"}
 		end
 
+		if num:match('^[%+%-]?0[0-9]') then
+			err('A leading zero is forbidden in a number')
+		end
+
 		exp = exp and tonumber(exp) or 0
 		if exp > 0 then
 			exp = math.floor(10 ^ exp)
