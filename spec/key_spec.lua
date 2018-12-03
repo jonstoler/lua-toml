@@ -84,4 +84,11 @@ f = "v"
 		assert.same('string', type(b))
 	end)
 
+	it("duplicated key", function()
+		local obj, err = TOML.parse[=[
+dup = false
+dup = true]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)

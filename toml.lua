@@ -691,7 +691,7 @@ TOML.multistep_parser = function (options)
 				local v = getValue()
 				if v then
 					-- if the key already exists in the current object, throw an error
-					if obj[buffer] then
+					if obj[buffer] ~= nil then
 						err('Cannot redefine key "' .. buffer .. '"', true)
 					end
 					obj[buffer] = v.value
