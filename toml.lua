@@ -456,7 +456,12 @@ TOML.multistep_parser = function (options)
 		end
 
 		if num:match('^[%+%-]?0[0-9]') then
-			err('A leading zero is forbidden in a number')
+			err('Leading zero found in number')
+		end
+		if dotfound then
+			if num:match('%.$') then
+				err('No trailing zero found in float')
+			end
 		end
 
 		exp = exp and tonumber(exp) or 0

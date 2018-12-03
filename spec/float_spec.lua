@@ -51,4 +51,17 @@ underscore = 9_224_617.445_991]=]
 		assert.same(sol, obj)
 	end)
 
+	it("trailing zero", function()
+		local obj, err = TOML.parse[=[
+float = 1. ]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("trailing zero with exp", function()
+		local obj, err = TOML.parse[=[
+float = 1.e12 ]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)
