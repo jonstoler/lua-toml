@@ -416,8 +416,10 @@ TOML.multistep_parser = function (options)
 		local num = ""
 		local exp
 		local date = false
+		local dotfound = false
 		while(bounds()) do
 			if char():match("[%+%-%.eE_0-9]") then
+				if char():match'%.' then dotfound = true end
 				if not exp then
 					if char():lower() == "e" then
 						-- as soon as we reach e or E, start appending to exponent buffer instead of
@@ -463,7 +465,10 @@ TOML.multistep_parser = function (options)
 		end
 		num = tonumber(num) * exp
 
-		return {value = num, type = "float"}
+		if exp < 0 or dotfound then
+			return {value = num, type = "float"}
+		end
+		return {value = num, type = "integer"}
 	end
 
 	local parseArray, getValue
