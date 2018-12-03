@@ -296,6 +296,7 @@ TOML.multistep_parser = function (options)
 						end
 					else
 						err("Invalid escape")
+						step()
 					end
 				end
 			else

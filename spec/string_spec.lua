@@ -170,4 +170,11 @@ b = "東方地霊殿"]=]
 		assert.same(e, nil)
 	end)
 
+	it("bad escape", function()
+		local t, e = TOML.parse[[
+bad = "this \aaa is wrong."
+]]
+		assert.same(nil, t)
+		assert.same('string', type(e))
+	end)
 end)
