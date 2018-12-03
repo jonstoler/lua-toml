@@ -7,6 +7,7 @@ describe("strictness setting", function()
 		TOML.strict = false
 		local obj = TOML.parse[=[
 mixed = [true, true, 3]]=]
+		TOML.strict = true
 		local sol = {
 			mixed = {true, true, 3}
 		}
