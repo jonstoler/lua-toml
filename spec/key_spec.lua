@@ -91,4 +91,37 @@ dup = true]=]
 		assert.same(nil, obj)
 		assert.same('string', type(err))
 	end)
+
+	it("error key with space", function()
+		local obj, err = TOML.parse[=[
+a b = 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("error key with braket", function()
+		local obj, err = TOML.parse[=[
+a[b = 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("error key with newline", function()
+		local obj, err = TOML.parse[=[
+a
+= 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("key with hash", function()
+		local obj, err = TOML.parse[=[
+a# = 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)

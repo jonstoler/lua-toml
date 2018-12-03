@@ -617,6 +617,15 @@ TOML.multistep_parser = function (options)
 
 	local function parse()
 
+		local function check_key()
+			if buffer == "" then
+				err("Empty key")
+			end
+			if buffer:match("[%s%c%%%(%)%*%+%.%?%[%]!\"#$&',/:;<=>@`\\^{|}~]") and not quotedKey then
+				err('Invalid character in key')
+			end
+		end
+
 		local function processKey(isLast, tableArray)
 			if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
 				err("Cannot redefine table", true)
@@ -674,7 +683,9 @@ TOML.multistep_parser = function (options)
 			end
 
 			if matchnl() then
-				-- skip
+				if trim(buffer) ~= '' then
+					err('Invalid key')
+				end
 			end
 
 			if char() == "=" then
@@ -683,6 +694,8 @@ TOML.multistep_parser = function (options)
 				
 				-- trim key name
 				buffer = trim(buffer)
+
+				if not quotedKey then check_key() end
 
 				if buffer:match("^[0-9]+$") and not quotedKey then
 					buffer = tonumber(buffer)
@@ -718,6 +731,10 @@ TOML.multistep_parser = function (options)
 					err("Invalid primitive")
 				end
 			elseif char() == "[" then
+				if trim(buffer) ~= '' then
+					err("Invalid key")
+				end
+
 				buffer = ""
 				step()
 				local tableArray = false
@@ -732,24 +749,6 @@ TOML.multistep_parser = function (options)
 
 				while(bounds()) do
 					if char() == "]" then
-						if tableArray then
-							if char(1) ~= "]" then
-								err("Mismatching brackets")
-							else
-								step() -- skip inside bracket
-							end
-						end
-						step() -- skip outside bracket
-						buffer = trim(buffer)
-						if not quotedKey and buffer == "" then
-							err("Empty table name")
-						end
-						processKey(true, tableArray, quotedKey)
-						buffer = ""
-						if defined_table[obj] then
-							err('Duplicated table definition')
-						end
-						defined_table[obj] = true
 						break
 					elseif char() == '"' or char() == "'" then
 						buffer = parseString().value
@@ -757,9 +756,7 @@ TOML.multistep_parser = function (options)
 					elseif char() == "." then
 						step() -- skip period
 						buffer = trim(buffer)
-						if not quotedKey and buffer == "" then
-							err("Empty table name")
-						end
+						if not quotedKey then check_key() end
 						processKey(false, tableArray, quotedKey)
 						buffer = ""
 					elseif char() == "[" then
@@ -770,7 +767,22 @@ TOML.multistep_parser = function (options)
 						step()
 					end
 				end
-
+				if tableArray then
+					if char(1) ~= "]" then
+						err("Mismatching brackets")
+					else
+						step() -- skip inside bracket
+					end
+				end
+				step() -- skip outside bracket
+				buffer = trim(buffer)
+				if not quotedKey then check_key() end
+				processKey(true, tableArray, quotedKey)
+				buffer = ""
+				if defined_table[obj] then
+					err('Duplicated table definition')
+				end
+				defined_table[obj] = true
 				buffer = ""
 				quotedKey = false
 			elseif (char() == '"' or char() == "'") then

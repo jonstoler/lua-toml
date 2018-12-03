@@ -111,4 +111,13 @@ field = 1
 		assert.same('string', type(err))
 	end)
 
+	it("tablke key with an equal", function()
+		local obj, err = TOML.parse[=[
+[b = 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+
 end)
