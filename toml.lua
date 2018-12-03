@@ -657,9 +657,12 @@ TOML.multistep_parser = function (options)
 			end
 		end
 
+		-- avoid double table definition
+		local defined_table = setmetatable({},{__mode='kv'})
+
 		-- track whether the current key was quoted or not
 		local quotedKey = false
-		
+
 		-- parse the document!
 		while(bounds()) do
 	
@@ -743,6 +746,10 @@ TOML.multistep_parser = function (options)
 						end
 						processKey(true, tableArray, quotedKey)
 						buffer = ""
+						if defined_table[obj] then
+							err('Duplicated table definition')
+						end
+						defined_table[obj] = true
 						break
 					elseif char() == '"' or char() == "'" then
 						buffer = parseString().value

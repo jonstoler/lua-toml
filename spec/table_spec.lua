@@ -101,4 +101,14 @@ field = 1
 		assert.same('string', type(err))
 	end)
 
+	it("duplicated table", function()
+
+		local obj, err = TOML.parse[=[
+[a]
+[a]
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
 end)
