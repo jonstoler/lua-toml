@@ -636,9 +636,13 @@ TOML.multistep_parser = function (options)
 				local newObj = obj[buffer] or {}
 				obj[buffer] = newObj
 				if #newObj > 0 then
-					-- an array is already in progress for this key, so modify its
-					-- last element, instead of the array itself
-					obj = newObj[#newObj]
+					if type(newObj) ~= 'table' then
+						err('Duplicate field')
+					else
+						-- an array is already in progress for this key, so modify its
+						-- last element, instead of the array itself
+						obj = newObj[#newObj]
+					end
 				else
 					obj = newObj
 				end

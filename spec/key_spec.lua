@@ -74,4 +74,14 @@ the = {"answer" = 42}]=]
 		assert.same('string', type(err))
 	end)
 
+	it("duplicated key", function()
+    local a, b = toml.parse[[
+[t]
+f = "v"
+[t.f]
+]]
+		assert.same(nil, a)
+		assert.same('string', type(b))
+	end)
+
 end)
