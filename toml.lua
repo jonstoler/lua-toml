@@ -755,6 +755,9 @@ TOML.multistep_parser = function (options)
 						end
 						processKey(false, tableArray, quotedKey)
 						buffer = ""
+					elseif char() == "[" then
+						err('Invalid character in key')
+						step()
 					else
 						buffer = buffer .. char()
 						step()

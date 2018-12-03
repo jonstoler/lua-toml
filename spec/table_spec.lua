@@ -91,4 +91,14 @@ point = { x = 1, y = 2 }]=]
 		assert.same(sol, obj)
 	end)
 
+	it("additional brace", function()
+
+		local obj, err = TOML.parse[=[
+[ [table]]
+field = 1
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
 end)
