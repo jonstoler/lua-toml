@@ -177,4 +177,12 @@ bad = "this \aaa is wrong."
 		assert.same(nil, t)
 		assert.same('string', type(e))
 	end)
+
+	it("bad unicode escape", function()
+		local t, e = TOML.parse[[
+str = "val\ue"
+]]
+		assert.same(nil, t)
+		assert.same('string', type(e))
+	end)
 end)

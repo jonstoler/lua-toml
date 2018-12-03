@@ -278,7 +278,9 @@ TOML.multistep_parser = function (options)
 						local uni = char(1) .. char(2) .. char(3) .. char(4)
 						step(5)
 						uni = tonumber(uni, 16)
-						if (uni >= 0 and uni <= 0xd7ff) and not (uni >= 0xe000 and uni <= 0x10ffff) then
+						if not uni then
+							err("Unicode escape is not a Unicode scalar")
+						elseif (uni >= 0 and uni <= 0xd7ff) and not (uni >= 0xe000 and uni <= 0x10ffff) then
 							str = str .. utf(uni)
 						else
 							err("Unicode escape is not a Unicode scalar")
