@@ -638,6 +638,9 @@ TOML.multistep_parser = function (options)
 		-- avoid double table definition
 		local defined_table = setmetatable({},{__mode='kv'})
 
+		-- keep track of container type i.e. table vs array
+		local container_type = setmetatable({},{__mode='kv'})
+
 		local function processKey(isLast, tableArray)
 			if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
 				err("Cannot redefine table", true)
@@ -647,26 +650,35 @@ TOML.multistep_parser = function (options)
 			-- filling it with values!
 			if tableArray then
 				-- push onto cache
-				if obj[buffer] then
-					obj = obj[buffer]
-					if isLast then
-						for k in pairs(obj) do
-							if not tonumber(k) and math.type(k) ~= 'integer' then
-								err('The selected key contains a table, not an Array', true)
-								break
-							end
-						end
-						table.insert(obj, {})
-					end
-					obj = obj[#obj]
+				local current = obj[buffer]
+
+				-- crete as needed + identify table vs array
+				local isArray = false
+				if current then
+					isArray = (container_type[current] == 'array')
 				else
-					obj[buffer] = {}
-					obj = obj[buffer]
+					current = {}
+					obj[buffer] = current
 					if isLast then
-						table.insert(obj, {})
-						obj = obj[1]
+						isArray = true
+						container_type[current] = 'array'
+					else
+						isArray = false
+						container_type[current] = 'hash'
 					end
 				end
+
+				if isLast and not isArray then
+						err('The selected key contains a table, not an array', true)
+				end
+
+				-- update current object
+				if not isLast then obj = current end
+				if isArray then
+					if isLast then table.insert(current, {}) end
+					obj = current[#current]
+				end
+
 			else
 				local newObj = obj[buffer] or {}
 				obj[buffer] = newObj
