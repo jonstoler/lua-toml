@@ -4,9 +4,8 @@ Version: 2.1.0
 
 Use [toml](https://github.com/toml-lang/toml) with lua!
 
-The core parser is based on TOML 0.4.0. However the underscores between digits
-are not supported. Moreover, for the time being, the date parsing should be
-considered experimental.
+The core parser is based on TOML 0.4.0 but for the time being, the
+date parsing should be considered experimental.
 
 The following features of TOML 0.5.0 are supported too (descriptions taken from
 the TOML changelog):

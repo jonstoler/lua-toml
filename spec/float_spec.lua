@@ -64,4 +64,50 @@ float = 1.e12 ]=]
 		assert.same(nil, obj)
 		assert.same('string', type(err))
 	end)
+
+	it("underscore", function()
+		local obj = TOML.parse[=[
+before = 3_141.5927
+after = 3141.592_7
+exponent = 3e1_4
+]=]
+		local sol = {
+			before = 3141.5927,
+			after = 3141.5927,
+			exponent = 3e14,
+		}
+		assert.same(sol, obj)
+	end)
+
+	it("bad undescore suffix", function()
+		local obj, err = TOML.parse[=[
+bad = 1.2_
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("bad undescore after dot", function()
+		local obj, err = TOML.parse[=[
+bad = 1._2
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("bad undescore before dot", function()
+		local obj, err = TOML.parse[=[
+bad = 1_.2
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("bad double undescore", function()
+		local obj, err = TOML.parse[=[
+bad = 3__141.5927
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)

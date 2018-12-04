@@ -417,6 +417,7 @@ TOML.multistep_parser = function (options)
 		local exp
 		local date = false
 		local dotfound = false
+		local prev_underscore = false
 		while(bounds()) do
 			if char():match("[%+%-%.eE_0-9]") then
 				if char():match'%.' then dotfound = true end
@@ -428,27 +429,37 @@ TOML.multistep_parser = function (options)
 					elseif char() ~= "_" then
 						num = num .. char()
 					end
-				elseif char():match("[%+%-0-9]") then
-					exp = exp .. char()
+				elseif char():match("[%+%-_0-9]") then
+					if char() ~= "_" then
+						exp = exp .. char()
+					end
 				else
 					err("Invalid exponent")
 				end
 			elseif matchWs() or char() == "#" or matchnl() or char() == "," or char() == "]" or char() == "}" then
 				break
-			elseif char() == "T" or char() == "Z" then
-				-- parse the date (as a string, since lua has no date object)
-				date = true
-				while(bounds()) do
-					if char() == "," or char() == "]" or char() == "#" or matchnl() or matchWs() then
-						break
-					end
-					num = num .. char()
-					step()
-				end
 			else
 				err("Invalid number")
 			end
+			if char() == '_' and num:sub(#num) == '.' then
+				err('Undescore after decimal point')
+			end
+			if char() == '_' and char(1) == '.' then
+				err('Undescore before decimal point')
+			end
+			if char() == '_' and prev_underscore then
+				err('Double underscore in number')
+			end
+			if char() == "_" then
+				prev_underscore = true
+			else
+				prev_underscore = false
+			end
 			step()
+		end
+
+		if prev_underscore then
+			err("Invalid undescore at end of number")
 		end
 
 		if date then
