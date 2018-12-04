@@ -635,6 +635,9 @@ TOML.multistep_parser = function (options)
 			end
 		end
 
+		-- avoid double table definition
+		local defined_table = setmetatable({},{__mode='kv'})
+
 		local function processKey(isLast, tableArray)
 			if isLast and obj[buffer] and not tableArray and #obj[buffer] > 0 then
 				err("Cannot redefine table", true)
@@ -647,6 +650,12 @@ TOML.multistep_parser = function (options)
 				if obj[buffer] then
 					obj = obj[buffer]
 					if isLast then
+						for k in pairs(obj) do
+							if not tonumber(k) and math.type(k) ~= 'integer' then
+								err('The selected key contains a table, not an Array', true)
+								break
+							end
+						end
 						table.insert(obj, {})
 					end
 					obj = obj[#obj]
@@ -673,10 +682,13 @@ TOML.multistep_parser = function (options)
 					obj = newObj
 				end
 			end
+			if isLast then
+				if defined_table[obj] then
+					err('Duplicated table definition')
+				end
+				defined_table[obj] = true
+			end
 		end
-
-		-- avoid double table definition
-		local defined_table = setmetatable({},{__mode='kv'})
 
 		-- track whether the current key was quoted or not
 		local quotedKey = false
@@ -788,10 +800,6 @@ TOML.multistep_parser = function (options)
 				if not quotedKey then check_key() end
 				processKey(true, tableArray, quotedKey)
 				buffer = ""
-				if defined_table[obj] then
-					err('Duplicated table definition')
-				end
-				defined_table[obj] = true
 				buffer = ""
 				quotedKey = false
 				skipWhitespace()

@@ -127,4 +127,15 @@ field = 1
 		assert.same('string', type(err))
 	end)
 
+it("implicit table vs array", function()
+		local obj, err = TOML.parse[=[
+[[shouldbe.array]]
+item = "one"
+
+[[shouldbe]]
+table = "error"
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)
