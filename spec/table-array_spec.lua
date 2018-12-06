@@ -40,7 +40,6 @@ last_name = "Seger"]=]
 		assert.same(sol, obj)
 	end)
 
-
 	it("nest", function()
 		local obj = TOML.parse[=[
 [[albums]]
@@ -92,5 +91,67 @@ last_name = "Springsteen"]=]
 			}
 		}
 		assert.same(sol, obj)
+	end)
+
+	it("nest-tables", function()
+		local obj = TOML.parse[=[
+[[people]]
+first_name = "Bruce"
+last_name = "Springsteen"
+
+[people.birth]
+date = "September 23, 1949"
+place = "Long Branch, New Jersey"
+
+[people.spouse]
+first_name = "Patti"
+last_name = "Scialfa"
+
+[[people]]
+# an empty element
+
+[[people]]
+first_name = "Eric"
+last_name = "Clapton"
+]=]
+		local sol = {
+			people = {
+				{
+					first_name = "Bruce", last_name = "Springsteen",
+					birth = {
+						date = "September 23, 1949",
+						place = "Long Branch, New Jersey"
+					},
+					spouse = { first_name = "Patti", last_name = "Scialfa" },
+				}, {
+				}, {
+					first_name = "Eric", last_name = "Clapton"
+				}
+			}
+		}
+		assert.same(sol, obj)
+	end)
+
+	it("implicit table vs array", function()
+			local obj, err = TOML.parse[=[
+[[shouldbe.array]]
+item = "one"
+
+[[shouldbe]]
+table = "error"
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
+
+	it("sub-table-array", function()
+		local obj, err = TOML.parse[=[
+[[shouldbe.array]]
+item = "one"
+
+[[shouldbe.array]]
+table = "error"
+]=]
+		assert.same(obj,{shouldbe={array={{item="one"},{table="error"}}}})
 	end)
 end)

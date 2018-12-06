@@ -61,9 +61,33 @@ tables = [
 			floats = {1.1, 2.1, 3.1},
 			strings = {"a", "b", "c"},
 			dates = {
-				"1987-07-05T17:45:00Z",
-				"1979-05-27T07:32:00Z",
-				"2006-06-01T11:00:00Z",
+				{
+					year = 1987,
+					month = 7,
+					day = 5,
+					hour = 17,
+					min = 45,
+					sec = 0,
+					zone = 0,
+				},
+				{
+					year = 1979,
+					month = 5,
+					day = 27,
+					hour = 7,
+					min = 32,
+					sec = 0,
+					zone = 0,
+				},
+				{
+					year = 2006,
+					month = 6,
+					day = 1,
+					hour = 11,
+					min = 0,
+					sec = 0,
+					zone = 0,
+				},
 			},
 			tables = {
 				{ x = 1, y = 2, z = 3 },
@@ -72,5 +96,12 @@ tables = [
 			}
 		}
 		assert.same(sol, obj)
+	end)
+
+	it("mixed number array", function()
+		local obj, err = TOML.parse[=[
+mix = [1.0, 2] ]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
 	end)
 end)

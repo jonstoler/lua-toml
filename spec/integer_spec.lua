@@ -19,17 +19,30 @@ underscore = 1_000]=]
 	end)
 
 	it("long", function()
-		-- BurntSushi's spec uses the largest long available
-		-- Lua doesn't have a long type, so we're using
-		-- the largest double available instead
 		local obj = TOML.parse[=[
-answer = 9007199254740992
-neganswer = -9007199254740991]=]
+answer = 9223372036854775807
+neganswer = -9223372036854775808]=]
 		local sol = {
-			answer = 9007199254740992,
-			neganswer = -9007199254740991
+			answer = 9223372036854775807,
+			neganswer = -9223372036854775807-1 --> not using -9223372036854775808 because of a lua 5.3 parser bug
 		}
 		assert.same(sol, obj)
 	end)
 
+	it("zero", function()
+		local obj, err = TOML.parse[=[
+zero = 0]=]
+		local sol = {
+			zero = 0,
+		}
+		assert.same(sol, obj)
+	end)
+
+	it("leading zero error", function()
+		local obj, err = TOML.parse[=[
+answer = 042
+]=]
+		assert.same(nil, obj)
+		assert.same('string', type(err))
+	end)
 end)
