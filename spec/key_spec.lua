@@ -75,7 +75,7 @@ the = {"answer" = 42}]=]
 	end)
 
 	it("duplicated key", function()
-    local a, b = toml.parse[[
+    local a, b = TOML.parse[[
 [t]
 f = "v"
 [t.f]
