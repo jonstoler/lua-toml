@@ -93,4 +93,22 @@ last_name = "Springsteen"]=]
 		}
 		assert.same(sol, obj)
 	end)
+
+	it("existing", function()
+		local obj = TOML.parse[=[
+[album]
+name = "Swimming"
+
+[[album.tracks]]
+name = "Wings"]=]
+		local sol = {
+			album = {
+				name = "Swimming",
+				tracks = {
+					{name = "Wings"}
+				}
+			}
+		}
+		assert.same(sol, obj)
+	end)
 end)
