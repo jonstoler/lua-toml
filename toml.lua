@@ -586,7 +586,6 @@ TOML.encode = function(tbl)
 				v = v:gsub("\f", "\\f")
 				v = v:gsub("\r", "\\r")
 				v = v:gsub('"', '\\"')
-				v = v:gsub("/", "\\/")
 				toml = toml .. k .. " = " .. quote .. v .. quote .. "\n"
 			elseif type(v) == "table" then
 				local array, arrayTable = true, true
